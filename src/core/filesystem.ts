@@ -292,8 +292,10 @@ export class FileSystem {
       if (isDirectory(existing)) {
         return { destParent: existing, destName: sourceName };
       }
-    } catch (_e) {
-      /* dest does not exist — fall through */
+    } catch (e) {
+      // Only "dest does not exist" should fall through to resolveParent. Anything else
+      // (e.g. NotADirectoryError from traversing through a file) must propagate.
+      if (!(e instanceof NotFoundError)) throw e;
     }
     const { parent, name } = this.resolveParent(dest);
     return { destParent: parent, destName: name };
@@ -313,13 +315,19 @@ export class FileSystem {
   ): void {
     const collision = destParent.children.get(desiredName);
 
-    // dir vs dir same name -> merge recursively (always)
+    // Dir-vs-dir same name: ALWAYS merge recursively, regardless of policy.
+    // Policies (error/overwrite/rename) apply to file-vs-file collisions discovered
+    // during the merge or to top-level non-dir collisions. This matches the behaviour
+    // documented in the spec and roughly mirrors `cp -r` / `mv` semantics.
     if (collision && isDirectory(collision) && isDirectory(source)) {
       for (const child of [...source.children.values()]) {
         this.placeInto(collision, child.name, child, policy, isMove);
       }
       if (isMove) {
-        // source dir is now empty; detach it
+        // If cwd is inside the merged-away subtree, move it to the source's parent.
+        if (this.isAncestorOrSelf(source, this.cwd)) {
+          this.cwd = source.parent!;
+        }
         source.parent!.children.delete(source.name);
         source.parent = null;
       }

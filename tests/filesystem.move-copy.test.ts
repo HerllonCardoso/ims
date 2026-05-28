@@ -64,6 +64,16 @@ describe('FileSystem — move (extended)', () => {
     expect(fs.ls('/B/x').sort()).toEqual(['one.txt', 'two.txt']);
     expect(fs.ls('/A')).toEqual([]);
   });
+
+  it('relocates cwd when cwd is inside a merged-away source directory', () => {
+    const fs = new FileSystem();
+    fs.mkdir('/A/x', { recursive: true });
+    fs.createFile('/A/x/one.txt');
+    fs.mkdir('/B/x', { recursive: true });
+    fs.cd('/A/x');
+    fs.move('/A/x', '/B'); // merges /A/x into /B/x; /A/x is detached
+    expect(fs.pwd()).toBe('/A');
+  });
 });
 
 describe('FileSystem — copy', () => {
@@ -93,5 +103,18 @@ describe('FileSystem — copy', () => {
     expect(fs.ls('/B/x').sort()).toEqual(['one.txt', 'two.txt']);
     // original still intact
     expect(fs.ls('/A/x')).toEqual(['one.txt']);
+  });
+
+  it('copy with policy "overwrite" replaces collision file content but keeps the original', () => {
+    const fs = seed();
+    fs.createFile('/dest/x.txt');
+    fs.writeFile('/dest/x.txt', 'OLD');
+    fs.copy('/src/a/x.txt', '/dest', { onConflict: 'overwrite' });
+    expect(fs.readFile('/dest/x.txt')).toBe('hello');
+    // original still intact:
+    expect(fs.readFile('/src/a/x.txt')).toBe('hello');
+    // mutating the copy doesn't touch the original (independent nodes):
+    fs.writeFile('/dest/x.txt', 'CHANGED');
+    expect(fs.readFile('/src/a/x.txt')).toBe('hello');
   });
 });
