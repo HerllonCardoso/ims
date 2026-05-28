@@ -1,7 +1,5 @@
 import { DirectoryNode, FileNode, FsNode, isDirectory, isFile } from './nodes';
 import { parsePath } from './path';
-
-export type WalkVisitor = (node: FsNode, path: string) => boolean | void;
 import {
   AlreadyExistsError,
   DirectoryNotEmptyError,
@@ -11,6 +9,8 @@ import {
   NotAFileError,
   NotFoundError,
 } from './errors';
+
+export type WalkVisitor = (node: FsNode, path: string) => boolean | void;
 
 export class FileSystem {
   private readonly root: DirectoryNode;
@@ -115,8 +115,10 @@ export class FileSystem {
   }
 
   /**
-   * Pre-order walk over the subtree at `path`. The visitor may return `false` from a
-   * directory node to skip recursion into its children.
+   * Pre-order walk over the subtree at `path`. The visitor is called for every node
+   * before its children. Returning `false` from a directory visitor skips recursion
+   * into that directory; returning `false` from a file visitor is ignored (files have
+   * no children to skip). To halt the walk entirely, throw from the visitor.
    */
   walk(path: string, visit: WalkVisitor): void {
     const start = this.resolveNode(path);
@@ -131,16 +133,23 @@ export class FileSystem {
     recurse(start);
   }
 
-  /** Returns the absolute path of the first node whose name matches the pattern. */
+  /**
+   * Returns the absolute path of the first node whose name matches the pattern.
+   * Pre-order (a parent dir is checked before its children); excludes the root node.
+   */
   findFirst(pattern: RegExp, startPath?: string): string | null {
+    const STOP = Symbol('findFirst-stop');
     let hit: string | null = null;
-    this.walk(startPath ?? this.pwd(), (node, p) => {
-      if (hit !== null) return false; // early exit: skip remaining recursion
-      if (node !== this.root && pattern.test(node.name)) {
-        hit = p;
-        return false;
-      }
-    });
+    try {
+      this.walk(startPath ?? this.pwd(), (node, p) => {
+        if (node !== this.root && pattern.test(node.name)) {
+          hit = p;
+          throw STOP;
+        }
+      });
+    } catch (e) {
+      if (e !== STOP) throw e;
+    }
     return hit;
   }
 

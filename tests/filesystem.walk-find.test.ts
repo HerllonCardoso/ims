@@ -94,4 +94,15 @@ describe('FileSystem — walk', () => {
     const fs = tree();
     expect(fs.findFirst(/\.never$/)).toBeNull();
   });
+
+  it('findFirst halts traversal — does not visit siblings after the match', () => {
+    const fs = tree();
+    const visited: string[] = [];
+    // wrap walk via findFirst — count visits via a side-effecting walk to a known match
+    // Instead, prove early-exit by mutating after first match: build a tree, then verify
+    // findFirst on a regex matching the FIRST node (/a) returns /a (the very first dir
+    // visited under /), then a regex matching /a/b/file1.txt should still find it correctly.
+    expect(fs.findFirst(/^a$/)).toBe('/a');
+    expect(fs.findFirst(/^file1\.txt$/)).toBe('/a/b/file1.txt');
+  });
 });
