@@ -31,6 +31,46 @@ export class FileSystem {
     this.cwd = node;
   }
 
+  mkdir(path: string, opts: { recursive?: boolean } = {}): DirectoryNode {
+    const { parent, name } = this.resolveParent(path, opts);
+    const existing = parent.children.get(name);
+    if (existing) {
+      if (opts.recursive && isDirectory(existing)) {
+        return existing;
+      }
+      throw new AlreadyExistsError(`Already exists: ${name}`);
+    }
+    const dir = new DirectoryNode(name, parent);
+    parent.children.set(name, dir);
+    return dir;
+  }
+
+  ls(path?: string): string[] {
+    const node = path === undefined ? this.cwd : this.resolveNode(path);
+    if (!isDirectory(node)) {
+      throw new NotADirectoryError(`Not a directory: ${path ?? this.pwd()}`);
+    }
+    return [...node.children.keys()].sort();
+  }
+
+  rmdir(path: string, opts: { recursive?: boolean } = {}): void {
+    const node = this.resolveNode(path);
+    if (!isDirectory(node)) {
+      throw new NotADirectoryError(`Not a directory: ${path}`);
+    }
+    if (node === this.root) {
+      throw new InvalidOperationError('Cannot remove the root directory');
+    }
+    if (node.children.size > 0 && !opts.recursive) {
+      throw new DirectoryNotEmptyError(`Directory not empty: ${path}`);
+    }
+    if (this.isAncestorOrSelf(node, this.cwd)) {
+      this.cwd = node.parent ?? this.root;
+    }
+    node.parent!.children.delete(node.name);
+    node.parent = null;
+  }
+
   // --- internal helpers -------------------------------------------------
 
   private startNode(absolute: boolean): DirectoryNode {
@@ -108,5 +148,14 @@ export class FileSystem {
       node = next as DirectoryNode;
     }
     return { parent: node, name: leaf };
+  }
+
+  private isAncestorOrSelf(ancestor: DirectoryNode, candidate: FsNode): boolean {
+    let n: FsNode | null = candidate;
+    while (n !== null) {
+      if (n === ancestor) return true;
+      n = n.parent;
+    }
+    return false;
   }
 }
