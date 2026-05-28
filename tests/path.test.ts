@@ -26,4 +26,21 @@ describe('parsePath', () => {
   it('throws InvalidPathError on empty input', () => {
     expect(() => parsePath('')).toThrow(InvalidPathError);
   });
+
+  it('throws InvalidPathError on whitespace-only input', () => {
+    expect(() => parsePath('   ')).toThrow(InvalidPathError);
+    expect(() => parsePath('\t\n')).toThrow(InvalidPathError);
+  });
+
+  it('treats only-slashes as root with no segments', () => {
+    expect(parsePath('////')).toEqual({ absolute: true, segments: [] });
+  });
+
+  it('parses ".." alone', () => {
+    expect(parsePath('..')).toEqual({ absolute: false, segments: ['..'] });
+  });
+
+  it('parses "." alone', () => {
+    expect(parsePath('.')).toEqual({ absolute: false, segments: [] });
+  });
 });

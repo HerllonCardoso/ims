@@ -2,7 +2,7 @@ import { InvalidPathError } from './errors';
 
 export interface ParsedPath {
   absolute: boolean;
-  segments: string[];
+  segments: readonly string[];
 }
 
 /**
@@ -10,7 +10,7 @@ export interface ParsedPath {
  * Returns whether the original input was absolute (started with '/').
  */
 export function parsePath(input: string): ParsedPath {
-  if (input.length === 0) {
+  if (input.trim().length === 0) {
     throw new InvalidPathError('Path cannot be empty');
   }
   const absolute = input.startsWith('/');
