@@ -45,7 +45,7 @@ export function runCommand(fs: FileSystem, line: string, print: Print): void {
       case 'rmdir':
         return fs.rmdir(required(args[0], 'rmdir <path>'), { recursive: flags.has('r') });
       case 'touch':
-        return void fs.createFile(required(args[0], 'touch <path>'));
+        return void fs.createFile(required(args[0], 'touch <path>'), { recursive: flags.has('p') });
       case 'write':
         return fs.writeFile(required(args[0], 'write <path> <content>'), rest);
       case 'cat':
@@ -54,17 +54,23 @@ export function runCommand(fs: FileSystem, line: string, print: Print): void {
         return fs.move(
           required(args[0], 'mv <src> <dest>'),
           required(args[1], 'mv <src> <dest>'),
-          { onConflict: conflictFromFlags(flags) },
+          { onConflict: conflictFromFlags(flags), recursive: flags.has('p') },
         );
       case 'cp':
         return fs.copy(
           required(args[0], 'cp <src> <dest>'),
           required(args[1], 'cp <src> <dest>'),
-          { onConflict: conflictFromFlags(flags) },
+          { onConflict: conflictFromFlags(flags), recursive: flags.has('p') },
         );
       case 'find': {
         const hits = fs.find(required(args[0], 'find <name>'));
         if (hits.length > 0) print(hits.join('\n'));
+        return;
+      }
+      case 'findFirst': {
+        const pattern = required(args[0], 'findFirst <regex>');
+        const hit = fs.findFirst(new RegExp(pattern));
+        if (hit !== null) print(hit);
         return;
       }
       case 'tree':
@@ -116,12 +122,13 @@ const HELP = [
   '  ls [path]                 list directory contents',
   '  mkdir [-p] <path>         make directory (-p creates intermediates)',
   '  rmdir [-r] <path>         remove directory (-r recursive)',
-  '  touch <path>              create empty file',
-  '  write <path> <content>    write contents to existing file',
-  '  cat <path>                print file contents',
-  '  mv [-f|-n] <src> <dest>   move/rename (-f overwrite, -n rename on collision)',
-  '  cp [-f|-n] <src> <dest>   copy (-f overwrite, -n rename on collision)',
-  '  find <name>               find every match by exact name in subtree',
+  '  touch [-p] <path>              create empty file (-p creates intermediate dirs)',
+  '  write <path> <content>         write contents to existing file',
+  '  cat <path>                     print file contents',
+  '  mv [-f|-n] [-p] <src> <dest>   move/rename (-f overwrite, -n rename, -p create dest parents)',
+  '  cp [-f|-n] [-p] <src> <dest>   copy (-f overwrite, -n rename, -p create dest parents)',
+  '  find <name>                    find every match by exact name in subtree',
+  '  findFirst <regex>              find first descendant whose name matches the regex',
   '  tree [path]               pretty-print subtree',
   '  walk [path]               list every descendant path',
   '  help                      show this message',

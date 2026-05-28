@@ -74,6 +74,18 @@ describe('FileSystem — move (extended)', () => {
     fs.move('/A/x', '/B'); // merges /A/x into /B/x; /A/x is detached
     expect(fs.pwd()).toBe('/A');
   });
+
+  it('move with { recursive: true } auto-creates missing destination directories', () => {
+    const fs = seed();
+    fs.move('/src/a/x.txt', '/dest/new/sub/y.txt', { recursive: true });
+    expect(fs.readFile('/dest/new/sub/y.txt')).toBe('hello');
+    expect(fs.ls('/src/a')).toEqual([]);
+  });
+
+  it('move WITHOUT recursive errors when destination intermediates are missing', () => {
+    const fs = seed();
+    expect(() => fs.move('/src/a/x.txt', '/dest/new/sub/y.txt')).toThrow();
+  });
 });
 
 describe('FileSystem — copy', () => {
@@ -115,6 +127,14 @@ describe('FileSystem — copy', () => {
     expect(fs.readFile('/src/a/x.txt')).toBe('hello');
     // mutating the copy doesn't touch the original (independent nodes):
     fs.writeFile('/dest/x.txt', 'CHANGED');
+    expect(fs.readFile('/src/a/x.txt')).toBe('hello');
+  });
+
+  it('copy with { recursive: true } auto-creates missing destination directories', () => {
+    const fs = seed();
+    fs.copy('/src/a/x.txt', '/dest/new/sub/y.txt', { recursive: true });
+    expect(fs.readFile('/dest/new/sub/y.txt')).toBe('hello');
+    // original still intact
     expect(fs.readFile('/src/a/x.txt')).toBe('hello');
   });
 });

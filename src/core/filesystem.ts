@@ -75,8 +75,8 @@ export class FileSystem {
     node.parent = null;
   }
 
-  createFile(path: string): FileNode {
-    const { parent, name } = this.resolveParent(path);
+  createFile(path: string, opts: { recursive?: boolean } = {}): FileNode {
+    const { parent, name } = this.resolveParent(path, opts);
     if (parent.children.has(name)) {
       throw new AlreadyExistsError(`Already exists: ${name}`);
     }
@@ -96,13 +96,13 @@ export class FileSystem {
   move(
     src: string,
     dest: string,
-    opts: { onConflict?: ConflictPolicy } = {},
+    opts: { onConflict?: ConflictPolicy; recursive?: boolean } = {},
   ): void {
     const source = this.resolveNode(src);
     if (source.parent === null) {
       throw new InvalidOperationError('Cannot move the root directory');
     }
-    const { destParent, destName } = this.resolveDestination(dest, source.name);
+    const { destParent, destName } = this.resolveDestination(dest, source.name, opts.recursive);
     if (source === destParent.children.get(destName)) return; // no-op
     if (
       isDirectory(source) &&
@@ -116,13 +116,13 @@ export class FileSystem {
   copy(
     src: string,
     dest: string,
-    opts: { onConflict?: ConflictPolicy } = {},
+    opts: { onConflict?: ConflictPolicy; recursive?: boolean } = {},
   ): void {
     const source = this.resolveNode(src);
     if (source.parent === null) {
       throw new InvalidOperationError('Cannot copy the root directory');
     }
-    const { destParent, destName } = this.resolveDestination(dest, source.name);
+    const { destParent, destName } = this.resolveDestination(dest, source.name, opts.recursive);
     this.placeInto(destParent, destName, source, opts.onConflict ?? 'error', false);
   }
 
@@ -278,6 +278,7 @@ export class FileSystem {
   private resolveDestination(
     dest: string,
     sourceName: string,
+    recursive = false,
   ): { destParent: DirectoryNode; destName: string } {
     try {
       const existing = this.resolveNode(dest);
@@ -289,7 +290,7 @@ export class FileSystem {
       // (e.g. NotADirectoryError from traversing through a file) must propagate.
       if (!(e instanceof NotFoundError)) throw e;
     }
-    const { parent, name } = this.resolveParent(dest);
+    const { parent, name } = this.resolveParent(dest, { recursive });
     return { destParent: parent, destName: name };
   }
 

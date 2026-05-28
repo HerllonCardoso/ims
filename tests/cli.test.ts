@@ -76,4 +76,53 @@ describe('CLI command dispatcher', () => {
     runCommand(fs, 'cd', (s) => out.push(s));
     expect(out[0]).toMatch(/Usage: cd <path>/);
   });
+
+  it('touch -p auto-creates intermediate directories', () => {
+    const fs = new FileSystem();
+    const out: string[] = [];
+    runCommand(fs, 'touch -p /a/b/c.txt', (s) => out.push(s));
+    runCommand(fs, 'ls /a/b', (s) => out.push(s));
+    expect(out).toEqual(['c.txt']);
+  });
+
+  it('mv -p auto-creates intermediate destination directories', () => {
+    const fs = new FileSystem();
+    const out: string[] = [];
+    runCommand(fs, 'touch a.txt', (s) => out.push(s));
+    runCommand(fs, 'write a.txt hi', (s) => out.push(s));
+    runCommand(fs, 'mv -p a.txt /new/sub/b.txt', (s) => out.push(s));
+    runCommand(fs, 'cat /new/sub/b.txt', (s) => out.push(s));
+    expect(out).toEqual(['hi']);
+  });
+
+  it('cp -p auto-creates intermediate destination directories', () => {
+    const fs = new FileSystem();
+    const out: string[] = [];
+    runCommand(fs, 'touch a.txt', (s) => out.push(s));
+    runCommand(fs, 'write a.txt hi', (s) => out.push(s));
+    runCommand(fs, 'cp -p a.txt /new/sub/b.txt', (s) => out.push(s));
+    runCommand(fs, 'cat /new/sub/b.txt', (s) => out.push(s));
+    runCommand(fs, 'cat a.txt', (s) => out.push(s));
+    expect(out).toEqual(['hi', 'hi']);
+  });
+
+  it('findFirst exposes the regex search in the CLI', () => {
+    const fs = new FileSystem();
+    const out: string[] = [];
+    runCommand(fs, 'mkdir -p a/b', (s) => out.push(s));
+    runCommand(fs, 'touch /a/b/notes.log', (s) => out.push(s));
+    runCommand(fs, 'findFirst \\.log$', (s) => out.push(s));
+    expect(out).toEqual(['/a/b/notes.log']);
+  });
+
+  it('mv with rename policy in the CLI', () => {
+    const fs = new FileSystem();
+    const out: string[] = [];
+    runCommand(fs, 'mkdir dest', (s) => out.push(s));
+    runCommand(fs, 'touch dest/x.txt', (s) => out.push(s));
+    runCommand(fs, 'touch x.txt', (s) => out.push(s));
+    runCommand(fs, 'mv -n x.txt dest', (s) => out.push(s));
+    runCommand(fs, 'ls dest', (s) => out.push(s));
+    expect(out[out.length - 1]).toBe('x (1).txt  x.txt');
+  });
 });

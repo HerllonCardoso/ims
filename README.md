@@ -56,14 +56,17 @@ Public methods on `FileSystem`:
 | `mkdir(path, { recursive? })` | `recursive` creates intermediate directories |
 | `ls(path?)` | sorted child names |
 | `rmdir(path, { recursive? })` | empty by default; `recursive` removes subtree |
-| `createFile(path)` | empty file |
+| `createFile(path, { recursive? })` | empty file; `recursive` creates intermediate directories |
 | `writeFile(path, content)` | overwrites |
 | `readFile(path)` | returns string content |
-| `move(src, dest, { onConflict? })` | merges directories; policy `error` / `overwrite` / `rename` |
-| `copy(src, dest, { onConflict? })` | deep clone; same merge + policy rules |
+| `move(src, dest, { onConflict?, recursive? })` | merges directories; policy `error` / `overwrite` / `rename`; `recursive` creates destination intermediates |
+| `copy(src, dest, { onConflict?, recursive? })` | deep clone; same merge + policy rules |
 | `find(name, startPath?)` | every match by exact name in the subtree |
 | `walk(path, visit)` | pre-order; visitor returning `false` prunes a subtree |
 | `findFirst(regex, startPath?)` | first match by regex |
+
+The CLI mirrors these options with flags: `-p` on `touch`, `mv`, and `cp` auto-creates
+intermediate destination directories.
 
 Errors are subclasses of `FileSystemError`: `InvalidPathError`, `NotFoundError`,
 `NotADirectoryError`, `NotAFileError`, `AlreadyExistsError`,

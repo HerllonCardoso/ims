@@ -47,4 +47,16 @@ describe('FileSystem — path operations', () => {
     fs.writeFile('/a/b/c.txt', 'hi');
     expect(fs.readFile('/a/b/c.txt')).toBe('hi');
   });
+
+  it('createFile with { recursive: true } auto-creates missing intermediate dirs', () => {
+    const fs = new FileSystem();
+    fs.createFile('/a/b/c.txt', { recursive: true });
+    fs.writeFile('/a/b/c.txt', 'hi');
+    expect(fs.readFile('/a/b/c.txt')).toBe('hi');
+  });
+
+  it('createFile without recursive errors on missing intermediates', () => {
+    const fs = new FileSystem();
+    expect(() => fs.createFile('/a/b/c.txt')).toThrow();
+  });
 });
