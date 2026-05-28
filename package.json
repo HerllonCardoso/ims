@@ -7,7 +7,7 @@
     "start": "ts-node src/cli/index.ts",
     "test": "jest",
     "test:watch": "jest --watch",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
