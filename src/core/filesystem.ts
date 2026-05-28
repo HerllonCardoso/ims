@@ -65,7 +65,8 @@ export class FileSystem {
       throw new DirectoryNotEmptyError(`Directory not empty: ${path}`);
     }
     if (this.isAncestorOrSelf(node, this.cwd)) {
-      this.cwd = node.parent ?? this.root;
+      // node.parent is guaranteed non-null here: root has been rejected above.
+      this.cwd = node.parent!;
     }
     node.parent!.children.delete(node.name);
     node.parent = null;

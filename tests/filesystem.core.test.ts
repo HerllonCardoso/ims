@@ -2,6 +2,7 @@ import { FileSystem } from '../src/core/filesystem';
 import {
   AlreadyExistsError,
   DirectoryNotEmptyError,
+  InvalidOperationError,
   InvalidPathError,
   NotADirectoryError,
   NotFoundError,
@@ -59,7 +60,7 @@ describe('FileSystem — directories', () => {
 
   it('mkdir without recursive errors on missing intermediates', () => {
     const fs = new FileSystem();
-    expect(() => fs.mkdir('a/b/c')).toThrow();
+    expect(() => fs.mkdir('a/b/c')).toThrow(NotFoundError);
   });
 
   it('rmdir removes an empty directory', () => {
@@ -86,6 +87,23 @@ describe('FileSystem — directories', () => {
     fs.cd('..');
     fs.rmdir('a', { recursive: true });
     expect(fs.ls()).toEqual([]);
+  });
+
+  it('mkdir({recursive:true}) on an existing directory returns it (idempotent)', () => {
+    const fs = new FileSystem();
+    const first = fs.mkdir('a');
+    const again = fs.mkdir('a', { recursive: true });
+    expect(again).toBe(first);
+  });
+
+  it('rmdir("/") throws InvalidOperationError', () => {
+    const fs = new FileSystem();
+    expect(() => fs.rmdir('/')).toThrow(InvalidOperationError);
+  });
+
+  it('rmdir("..") at root throws InvalidOperationError', () => {
+    const fs = new FileSystem();
+    expect(() => fs.rmdir('..')).toThrow(InvalidOperationError);
   });
 
   it('walks the worked example end-to-end', () => {
