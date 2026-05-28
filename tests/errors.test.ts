@@ -28,3 +28,18 @@ describe('FileSystemError hierarchy', () => {
     expect(err.message).toBe('boom');
   });
 });
+
+describe('FileSystemError base class', () => {
+  it('sets name to "FileSystemError" and propagates message', () => {
+    const err = new FileSystemError('base');
+    expect(err).toBeInstanceOf(Error);
+    expect(err.name).toBe('FileSystemError');
+    expect(err.message).toBe('base');
+  });
+
+  it('propagates the cause option', () => {
+    const original = new Error('original');
+    const err = new NotFoundError('wrapper', { cause: original });
+    expect(err.cause).toBe(original);
+  });
+});
