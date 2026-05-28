@@ -90,6 +90,45 @@ export class FileSystem {
     return this.resolveFile(path).content;
   }
 
+  /**
+   * Part 1 / simple form: rename or relocate a node to a new path in the SAME or
+   * a different directory. Task 11 extends this with merge + collision policy.
+   */
+  move(src: string, dest: string): void {
+    const node = this.resolveNode(src);
+    if (node.parent === null) {
+      throw new InvalidOperationError('Cannot move the root directory');
+    }
+    const { parent: destParent, name: destName } = this.resolveParent(dest);
+    if (destParent.children.has(destName)) {
+      throw new AlreadyExistsError(`Already exists: ${destName}`);
+    }
+    if (isDirectory(node) && this.isAncestorOrSelf(node, destParent)) {
+      throw new InvalidOperationError('Cannot move a directory into itself');
+    }
+    node.parent.children.delete(node.name);
+    node.name = destName;
+    node.parent = destParent;
+    destParent.children.set(destName, node);
+  }
+
+  find(name: string, startPath?: string): string[] {
+    const start = startPath === undefined ? this.cwd : this.resolveNode(startPath);
+    const matches: string[] = [];
+    const visit = (node: FsNode): void => {
+      if (node.name === name && node !== this.root) {
+        matches.push(this.pathOf(node));
+      }
+      if (isDirectory(node)) {
+        for (const child of node.children.values()) {
+          visit(child);
+        }
+      }
+    };
+    visit(start);
+    return matches;
+  }
+
   // --- internal helpers -------------------------------------------------
 
   private resolveFile(path: string): FileNode {

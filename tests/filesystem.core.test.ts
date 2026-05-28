@@ -176,3 +176,26 @@ describe('FileSystem — files', () => {
     expect(() => fs.cd('readme/..')).toThrow(NotADirectoryError);
   });
 });
+
+describe('FileSystem — move (rename within directory)', () => {
+  it('renames a file in cwd', () => {
+    const fs = new FileSystem();
+    fs.createFile('a.txt');
+    fs.writeFile('a.txt', 'hello');
+    fs.move('a.txt', 'b.txt');
+    expect(fs.ls()).toEqual(['b.txt']);
+    expect(fs.readFile('b.txt')).toBe('hello');
+  });
+
+  it('renaming onto an existing name throws AlreadyExistsError', () => {
+    const fs = new FileSystem();
+    fs.createFile('a.txt');
+    fs.createFile('b.txt');
+    expect(() => fs.move('a.txt', 'b.txt')).toThrow(AlreadyExistsError);
+  });
+
+  it('moving a missing source throws NotFoundError', () => {
+    const fs = new FileSystem();
+    expect(() => fs.move('nope', 'x')).toThrow(NotFoundError);
+  });
+});
