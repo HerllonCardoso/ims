@@ -1,5 +1,6 @@
 import { DirectoryNode, FileNode, FsNode, isDirectory, isFile } from './nodes';
 import { parsePath } from './path';
+import { ConflictPolicy, cloneNodeTree, nextFreeName } from './conflicts';
 import {
   AlreadyExistsError,
   DirectoryNotEmptyError,
@@ -92,26 +93,37 @@ export class FileSystem {
     return this.resolveFile(path).content;
   }
 
-  /**
-   * Part 1 / simple form: rename or relocate a node to a new path in the SAME or
-   * a different directory. Task 11 extends this with merge + collision policy.
-   */
-  move(src: string, dest: string): void {
-    const node = this.resolveNode(src);
-    if (node.parent === null) {
+  move(
+    src: string,
+    dest: string,
+    opts: { onConflict?: ConflictPolicy } = {},
+  ): void {
+    const source = this.resolveNode(src);
+    if (source.parent === null) {
       throw new InvalidOperationError('Cannot move the root directory');
     }
-    const { parent: destParent, name: destName } = this.resolveParent(dest);
-    if (destParent.children.has(destName)) {
-      throw new AlreadyExistsError(`Already exists: ${destName}`);
-    }
-    if (isDirectory(node) && this.isAncestorOrSelf(node, destParent)) {
+    const { destParent, destName } = this.resolveDestination(dest, source.name);
+    if (source === destParent.children.get(destName)) return; // no-op
+    if (
+      isDirectory(source) &&
+      this.isAncestorOrSelf(source, destParent)
+    ) {
       throw new InvalidOperationError('Cannot move a directory into itself');
     }
-    node.parent.children.delete(node.name);
-    node.name = destName;
-    node.parent = destParent;
-    destParent.children.set(destName, node);
+    this.placeInto(destParent, destName, source, opts.onConflict ?? 'error', true);
+  }
+
+  copy(
+    src: string,
+    dest: string,
+    opts: { onConflict?: ConflictPolicy } = {},
+  ): void {
+    const source = this.resolveNode(src);
+    if (source.parent === null) {
+      throw new InvalidOperationError('Cannot copy the root directory');
+    }
+    const { destParent, destName } = this.resolveDestination(dest, source.name);
+    this.placeInto(destParent, destName, source, opts.onConflict ?? 'error', false);
   }
 
   /**
@@ -264,5 +276,90 @@ export class FileSystem {
       n = n.parent;
     }
     return false;
+  }
+
+  /**
+   * Interpret `dest`: if it resolves to an existing directory, the source is placed
+   * INSIDE it under its current name. Otherwise the trailing segment of `dest` is the
+   * new leaf name and intermediate dirs must already exist.
+   */
+  private resolveDestination(
+    dest: string,
+    sourceName: string,
+  ): { destParent: DirectoryNode; destName: string } {
+    try {
+      const existing = this.resolveNode(dest);
+      if (isDirectory(existing)) {
+        return { destParent: existing, destName: sourceName };
+      }
+    } catch (_e) {
+      /* dest does not exist — fall through */
+    }
+    const { parent, name } = this.resolveParent(dest);
+    return { destParent: parent, destName: name };
+  }
+
+  /**
+   * Core of move/copy. Inserts (or merges) `source` into `destParent` under
+   * `desiredName`, honouring the collision policy. When moving and a merge happens,
+   * the source's original children are detached after merging.
+   */
+  private placeInto(
+    destParent: DirectoryNode,
+    desiredName: string,
+    source: FsNode,
+    policy: ConflictPolicy,
+    isMove: boolean,
+  ): void {
+    const collision = destParent.children.get(desiredName);
+
+    // dir vs dir same name -> merge recursively (always)
+    if (collision && isDirectory(collision) && isDirectory(source)) {
+      for (const child of [...source.children.values()]) {
+        this.placeInto(collision, child.name, child, policy, isMove);
+      }
+      if (isMove) {
+        // source dir is now empty; detach it
+        source.parent!.children.delete(source.name);
+        source.parent = null;
+      }
+      return;
+    }
+
+    let finalName = desiredName;
+    if (collision) {
+      if (collision === source) return; // no-op
+      if (policy === 'error') {
+        throw new AlreadyExistsError(`Already exists: ${desiredName}`);
+      }
+      if (policy === 'rename') {
+        finalName = nextFreeName(destParent, desiredName);
+      } else if (policy === 'overwrite') {
+        if (isDirectory(collision) || isDirectory(source)) {
+          throw new InvalidOperationError(
+            `Refusing to overwrite ${collision.kind} with ${source.kind}: ${desiredName}`,
+          );
+        }
+        // copy + overwrite: just replace content, keep collision node
+        if (!isMove) {
+          if (isFile(collision) && isFile(source)) {
+            collision.content = source.content;
+          }
+          return;
+        }
+        // move + overwrite: remove the collision first, then place normally
+        destParent.children.delete(desiredName);
+      }
+    }
+
+    if (isMove) {
+      source.parent!.children.delete(source.name);
+      source.name = finalName;
+      source.parent = destParent;
+      destParent.children.set(finalName, source);
+    } else {
+      const cloned = cloneNodeTree(source, destParent, finalName);
+      destParent.children.set(finalName, cloned);
+    }
   }
 }
