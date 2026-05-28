@@ -1,5 +1,7 @@
 import { DirectoryNode, FileNode, FsNode, isDirectory, isFile } from './nodes';
 import { parsePath } from './path';
+
+export type WalkVisitor = (node: FsNode, path: string) => boolean | void;
 import {
   AlreadyExistsError,
   DirectoryNotEmptyError,
@@ -110,6 +112,36 @@ export class FileSystem {
     node.name = destName;
     node.parent = destParent;
     destParent.children.set(destName, node);
+  }
+
+  /**
+   * Pre-order walk over the subtree at `path`. The visitor may return `false` from a
+   * directory node to skip recursion into its children.
+   */
+  walk(path: string, visit: WalkVisitor): void {
+    const start = this.resolveNode(path);
+    const recurse = (node: FsNode): void => {
+      const decision = visit(node, this.pathOf(node));
+      if (isDirectory(node) && decision !== false) {
+        for (const child of node.children.values()) {
+          recurse(child);
+        }
+      }
+    };
+    recurse(start);
+  }
+
+  /** Returns the absolute path of the first node whose name matches the pattern. */
+  findFirst(pattern: RegExp, startPath?: string): string | null {
+    let hit: string | null = null;
+    this.walk(startPath ?? this.pwd(), (node, p) => {
+      if (hit !== null) return false; // early exit: skip remaining recursion
+      if (node !== this.root && pattern.test(node.name)) {
+        hit = p;
+        return false;
+      }
+    });
+    return hit;
   }
 
   find(name: string, startPath?: string): string[] {
