@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "description": "In-memory filesystem with a CLI demo",
+  "license": "MIT",
+  "author": "Herllon Cardoso",
   "scripts": {
     "start": "ts-node src/cli/index.ts",
     "test": "jest",
