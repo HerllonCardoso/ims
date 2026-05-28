@@ -20,12 +20,11 @@ function parse(line: string): Parsed {
     for (const ch of tokens.shift()!.slice(1)) flags.add(ch);
   }
   const args = [...tokens];
-  const idx = args[0] !== undefined ? line.indexOf(args[0]) : -1;
-  const afterFirst =
-    idx >= 0 && args[0] !== undefined
-      ? line.slice(idx + args[0].length).trim()
-      : '';
-  return { command, flags, args, rest: afterFirst };
+  // For commands that take "<path> <content...>" (like `write`), `rest` is the tail
+  // after the first argument joined back with spaces. Whitespace within the content is
+  // collapsed to a single space — acceptable for a take-home REPL without quoted strings.
+  const rest = args.slice(1).join(' ');
+  return { command, flags, args, rest };
 }
 
 export function runCommand(fs: FileSystem, line: string, print: Print): void {
@@ -82,6 +81,7 @@ export function runCommand(fs: FileSystem, line: string, print: Print): void {
     }
   } catch (err) {
     if (err instanceof FileSystemError) return print(`${err.name}: ${err.message}`);
+    if (err instanceof Error) return print(err.message);
     throw err;
   }
 }

@@ -60,4 +60,20 @@ describe('CLI command dispatcher', () => {
     runCommand(fs, 'cd nope', (s) => out.push(s));
     expect(out[0]).toMatch(/No such file or directory/);
   });
+
+  it('write captures multi-token content correctly even when the path equals the command', () => {
+    const fs = new FileSystem();
+    const out: string[] = [];
+    runCommand(fs, 'touch write', (s) => out.push(s));
+    runCommand(fs, 'write write hello there', (s) => out.push(s));
+    runCommand(fs, 'cat write', (s) => out.push(s));
+    expect(out).toEqual(['hello there']);
+  });
+
+  it('prints a usage message when required argument is missing', () => {
+    const fs = new FileSystem();
+    const out: string[] = [];
+    runCommand(fs, 'cd', (s) => out.push(s));
+    expect(out[0]).toMatch(/Usage: cd <path>/);
+  });
 });
