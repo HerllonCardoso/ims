@@ -83,22 +83,22 @@ export class FileSystem {
   }
 
   writeFile(path: string, content: string): void {
-    const node = this.resolveNode(path);
-    if (!isFile(node)) {
-      throw new NotAFileError(`Not a file: ${path}`);
-    }
-    node.content = content;
+    this.resolveFile(path).content = content;
   }
 
   readFile(path: string): string {
+    return this.resolveFile(path).content;
+  }
+
+  // --- internal helpers -------------------------------------------------
+
+  private resolveFile(path: string): FileNode {
     const node = this.resolveNode(path);
     if (!isFile(node)) {
       throw new NotAFileError(`Not a file: ${path}`);
     }
-    return node.content;
+    return node;
   }
-
-  // --- internal helpers -------------------------------------------------
 
   private startNode(absolute: boolean): DirectoryNode {
     return absolute ? this.root : this.cwd;
@@ -169,10 +169,10 @@ export class FileSystem {
         node.children.set(seg, created);
         next = created;
       }
-      if (next.kind !== 'directory') {
+      if (!isDirectory(next)) {
         throw new NotADirectoryError(`Not a directory: ${seg}`);
       }
-      node = next as DirectoryNode;
+      node = next;
     }
     return { parent: node, name: leaf };
   }
