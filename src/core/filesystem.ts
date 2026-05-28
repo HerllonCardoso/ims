@@ -1,4 +1,4 @@
-import { DirectoryNode, FileNode, FsNode } from './nodes';
+import { DirectoryNode, FileNode, FsNode, isDirectory } from './nodes';
 import { parsePath } from './path';
 import {
   AlreadyExistsError,
@@ -25,10 +25,10 @@ export class FileSystem {
 
   cd(path: string): void {
     const node = this.resolveNode(path);
-    if (node.kind !== 'directory') {
+    if (!isDirectory(node)) {
       throw new NotADirectoryError(`Not a directory: ${path}`);
     }
-    this.cwd = node as DirectoryNode;
+    this.cwd = node;
   }
 
   // --- internal helpers -------------------------------------------------
@@ -54,13 +54,16 @@ export class FileSystem {
     let node: FsNode = this.startNode(absolute);
     for (const seg of segments) {
       if (seg === '..') {
+        if (!isDirectory(node)) {
+          throw new NotADirectoryError(`Not a directory: ${path}`);
+        }
         node = node.parent ?? node; // '..' at root stays at root
         continue;
       }
-      if (node.kind !== 'directory') {
+      if (!isDirectory(node)) {
         throw new NotADirectoryError(`Not a directory: ${path}`);
       }
-      const next = (node as DirectoryNode).children.get(seg);
+      const next = node.children.get(seg);
       if (!next) throw new NotFoundError(`No such file or directory: ${path}`);
       node = next;
     }
