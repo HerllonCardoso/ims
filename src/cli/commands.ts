@@ -64,7 +64,8 @@ export function runCommand(fs: FileSystem, line: string, print: Print): void {
         );
       case 'find': {
         const hits = fs.find(required(args[0], 'find <name>'));
-        return print(hits.join('\n'));
+        if (hits.length > 0) print(hits.join('\n'));
+        return;
       }
       case 'tree':
         return printTree(fs, args[0] ?? fs.pwd(), print);

@@ -114,5 +114,5 @@ Errors are subclasses of `FileSystemError`: `InvalidPathError`, `NotFoundError`,
 
 ## Tests
 
-82 tests across 7 files cover every public method, edge cases, error paths, and the
+82 tests across 8 files cover every public method, edge cases, error paths, and the
 worked example.

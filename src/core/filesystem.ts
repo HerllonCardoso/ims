@@ -128,9 +128,10 @@ export class FileSystem {
 
   /**
    * Pre-order walk over the subtree at `path`. The visitor is called for every node
-   * before its children. Returning `false` from a directory visitor skips recursion
-   * into that directory; returning `false` from a file visitor is ignored (files have
-   * no children to skip). To halt the walk entirely, throw from the visitor.
+   * before its children. Children are visited in insertion order (not sorted; use
+   * `ls()` for sorted listings). Returning `false` from a directory visitor skips
+   * recursion into that directory; returning `false` from a file visitor is ignored.
+   * To halt the walk entirely, throw from the visitor.
    */
   walk(path: string, visit: WalkVisitor): void {
     const start = this.resolveNode(path);
@@ -166,19 +167,10 @@ export class FileSystem {
   }
 
   find(name: string, startPath?: string): string[] {
-    const start = startPath === undefined ? this.cwd : this.resolveNode(startPath);
     const matches: string[] = [];
-    const visit = (node: FsNode): void => {
-      if (node.name === name && node !== this.root) {
-        matches.push(this.pathOf(node));
-      }
-      if (isDirectory(node)) {
-        for (const child of node.children.values()) {
-          visit(child);
-        }
-      }
-    };
-    visit(start);
+    this.walk(startPath ?? this.pwd(), (node, path) => {
+      if (node.name === name && node !== this.root) matches.push(path);
+    });
     return matches;
   }
 
@@ -208,7 +200,7 @@ export class FileSystem {
   }
 
   /** Resolve a path to an existing node. Throws if any component is missing. */
-  protected resolveNode(path: string): FsNode {
+  private resolveNode(path: string): FsNode {
     const { absolute, segments } = parsePath(path);
     let node: FsNode = this.startNode(absolute);
     for (const seg of segments) {
@@ -233,7 +225,7 @@ export class FileSystem {
    * Resolve to (containing directory, leaf name). Used by create/move/copy.
    * With { recursive: true } any missing intermediate directories are created.
    */
-  protected resolveParent(
+  private resolveParent(
     path: string,
     opts: { recursive?: boolean } = {},
   ): { parent: DirectoryNode; name: string } {
