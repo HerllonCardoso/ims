@@ -5,6 +5,7 @@ import {
   InvalidOperationError,
   InvalidPathError,
   NotADirectoryError,
+  NotAFileError,
   NotFoundError,
 } from '../src/core/errors';
 
@@ -126,5 +127,52 @@ describe('FileSystem — directories', () => {
     fs.rmdir('cheatsheet');
     fs.cd('..');
     expect(fs.pwd()).toBe('/');
+  });
+});
+
+describe('FileSystem — files', () => {
+  it('createFile makes an empty file', () => {
+    const fs = new FileSystem();
+    fs.createFile('a.txt');
+    expect(fs.ls()).toEqual(['a.txt']);
+    expect(fs.readFile('a.txt')).toBe('');
+  });
+
+  it('writeFile overwrites file content', () => {
+    const fs = new FileSystem();
+    fs.createFile('a.txt');
+    fs.writeFile('a.txt', 'hello');
+    expect(fs.readFile('a.txt')).toBe('hello');
+    fs.writeFile('a.txt', 'world');
+    expect(fs.readFile('a.txt')).toBe('world');
+  });
+
+  it('createFile on an existing name throws AlreadyExistsError', () => {
+    const fs = new FileSystem();
+    fs.createFile('a.txt');
+    expect(() => fs.createFile('a.txt')).toThrow(AlreadyExistsError);
+  });
+
+  it('writeFile on a missing path throws NotFoundError', () => {
+    const fs = new FileSystem();
+    expect(() => fs.writeFile('nope.txt', 'x')).toThrow(NotFoundError);
+  });
+
+  it('readFile on a directory throws NotAFileError', () => {
+    const fs = new FileSystem();
+    fs.mkdir('d');
+    expect(() => fs.readFile('d')).toThrow(NotAFileError);
+  });
+
+  it('ls on a file throws NotADirectoryError', () => {
+    const fs = new FileSystem();
+    fs.createFile('a.txt');
+    expect(() => fs.ls('a.txt')).toThrow(NotADirectoryError);
+  });
+
+  it('"cd ../" through a file throws NotADirectoryError (regression for resolveNode)', () => {
+    const fs = new FileSystem();
+    fs.createFile('readme');
+    expect(() => fs.cd('readme/..')).toThrow(NotADirectoryError);
   });
 });

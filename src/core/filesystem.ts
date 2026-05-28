@@ -1,4 +1,4 @@
-import { DirectoryNode, FileNode, FsNode, isDirectory } from './nodes';
+import { DirectoryNode, FileNode, FsNode, isDirectory, isFile } from './nodes';
 import { parsePath } from './path';
 import {
   AlreadyExistsError,
@@ -70,6 +70,32 @@ export class FileSystem {
     }
     node.parent!.children.delete(node.name);
     node.parent = null;
+  }
+
+  createFile(path: string): FileNode {
+    const { parent, name } = this.resolveParent(path);
+    if (parent.children.has(name)) {
+      throw new AlreadyExistsError(`Already exists: ${name}`);
+    }
+    const file = new FileNode(name, parent);
+    parent.children.set(name, file);
+    return file;
+  }
+
+  writeFile(path: string, content: string): void {
+    const node = this.resolveNode(path);
+    if (!isFile(node)) {
+      throw new NotAFileError(`Not a file: ${path}`);
+    }
+    node.content = content;
+  }
+
+  readFile(path: string): string {
+    const node = this.resolveNode(path);
+    if (!isFile(node)) {
+      throw new NotAFileError(`Not a file: ${path}`);
+    }
+    return node.content;
   }
 
   // --- internal helpers -------------------------------------------------
