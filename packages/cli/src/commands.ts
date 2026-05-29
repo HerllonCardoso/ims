@@ -1,5 +1,5 @@
 import {
-  FileSystem,
+  type FileSystem,
   FileSystemError,
   type ConflictPolicy,
   type PermissionUpdate,
