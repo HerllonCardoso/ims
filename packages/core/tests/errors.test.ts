@@ -7,7 +7,10 @@ import {
   AlreadyExistsError,
   DirectoryNotEmptyError,
   InvalidOperationError,
-} from '../src/core/errors';
+  PermissionDeniedError,
+  UserNotFoundError,
+  GroupNotFoundError,
+} from '../src/errors';
 
 describe('FileSystemError hierarchy', () => {
   const cases: Array<[new (m: string) => FileSystemError, string]> = [
@@ -18,6 +21,9 @@ describe('FileSystemError hierarchy', () => {
     [AlreadyExistsError, 'AlreadyExistsError'],
     [DirectoryNotEmptyError, 'DirectoryNotEmptyError'],
     [InvalidOperationError, 'InvalidOperationError'],
+    [PermissionDeniedError, 'PermissionDeniedError'],
+    [UserNotFoundError, 'UserNotFoundError'],
+    [GroupNotFoundError, 'GroupNotFoundError'],
   ];
 
   it.each(cases)('%p extends FileSystemError and sets name', (Ctor, name) => {

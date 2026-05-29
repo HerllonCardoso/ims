@@ -1,4 +1,4 @@
-import { FileSystem } from '../src/core/filesystem';
+import { FileSystem } from '../src/filesystem';
 import {
   AlreadyExistsError,
   DirectoryNotEmptyError,
@@ -7,7 +7,7 @@ import {
   NotADirectoryError,
   NotAFileError,
   NotFoundError,
-} from '../src/core/errors';
+} from '../src/errors';
 
 describe('FileSystem — pwd & cd', () => {
   it('starts at the root', () => {
@@ -43,6 +43,11 @@ describe('FileSystem — directories', () => {
     const fs = new FileSystem();
     fs.mkdir('school');
     expect(fs.ls()).toEqual(['school']);
+  });
+
+  it('mkdir does not expose the live directory node', () => {
+    const fs = new FileSystem();
+    expect(fs.mkdir('school')).toBeUndefined();
   });
 
   it('ls returns children sorted alphabetically', () => {
@@ -90,11 +95,11 @@ describe('FileSystem — directories', () => {
     expect(fs.ls()).toEqual([]);
   });
 
-  it('mkdir({recursive:true}) on an existing directory returns it (idempotent)', () => {
+  it('mkdir({recursive:true}) on an existing directory is idempotent', () => {
     const fs = new FileSystem();
-    const first = fs.mkdir('a');
-    const again = fs.mkdir('a', { recursive: true });
-    expect(again).toBe(first);
+    fs.mkdir('a');
+    expect(() => fs.mkdir('a', { recursive: true })).not.toThrow();
+    expect(fs.ls()).toEqual(['a']);
   });
 
   it('rmdir("/") throws InvalidOperationError', () => {
@@ -136,6 +141,11 @@ describe('FileSystem — files', () => {
     fs.createFile('a.txt');
     expect(fs.ls()).toEqual(['a.txt']);
     expect(fs.readFile('a.txt')).toBe('');
+  });
+
+  it('createFile does not expose the live file node', () => {
+    const fs = new FileSystem();
+    expect(fs.createFile('a.txt')).toBeUndefined();
   });
 
   it('writeFile overwrites file content', () => {

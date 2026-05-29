@@ -1,4 +1,4 @@
-import { DirectoryNode, FileNode } from '../src/core/nodes';
+import { DirectoryNode, FileNode } from '../src/nodes';
 
 describe('node model', () => {
   it('FileNode has kind="file" and empty content', () => {

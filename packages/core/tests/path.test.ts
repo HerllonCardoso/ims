@@ -1,5 +1,5 @@
-import { parsePath } from '../src/core/path';
-import { InvalidPathError } from '../src/core/errors';
+import { parsePath } from '../src/path';
+import { InvalidPathError } from '../src/errors';
 
 describe('parsePath', () => {
   it('parses an absolute path', () => {

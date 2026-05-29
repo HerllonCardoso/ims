@@ -1,8 +1,5 @@
-import { FileSystem } from '../src/core/filesystem';
-import {
-  NotADirectoryError,
-  NotFoundError,
-} from '../src/core/errors';
+import { FileSystem } from '../src/filesystem';
+import { NotADirectoryError, NotFoundError } from '../src/errors';
 
 describe('FileSystem — path operations', () => {
   it('mkdir with recursive creates missing intermediates', () => {

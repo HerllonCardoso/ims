@@ -12,3 +12,6 @@ export class NotAFileError extends FileSystemError {}
 export class AlreadyExistsError extends FileSystemError {}
 export class DirectoryNotEmptyError extends FileSystemError {}
 export class InvalidOperationError extends FileSystemError {}
+export class PermissionDeniedError extends FileSystemError {}
+export class UserNotFoundError extends FileSystemError {}
+export class GroupNotFoundError extends FileSystemError {}

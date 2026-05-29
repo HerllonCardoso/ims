@@ -14,8 +14,6 @@ export function parsePath(input: string): ParsedPath {
     throw new InvalidPathError('Path cannot be empty');
   }
   const absolute = input.startsWith('/');
-  const segments = input
-    .split('/')
-    .filter((s) => s.length > 0 && s !== '.');
+  const segments = input.split('/').filter((s) => s.length > 0 && s !== '.');
   return { absolute, segments };
 }

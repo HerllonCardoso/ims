@@ -1,7 +1,11 @@
+import { createNodePermissions, type NodePermissions } from './permissions';
+
 export type NodeKind = 'file' | 'directory';
 
 export abstract class FsNode {
   abstract readonly kind: NodeKind;
+  permissions: NodePermissions = createNodePermissions();
+
   constructor(
     public name: string,
     public parent: DirectoryNode | null,

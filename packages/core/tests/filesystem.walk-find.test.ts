@@ -1,4 +1,4 @@
-import { FileSystem } from '../src/core/filesystem';
+import { FileSystem } from '../src/filesystem';
 
 function setup(): FileSystem {
   const fs = new FileSystem();
@@ -37,9 +37,7 @@ describe('FileSystem — find', () => {
 
   it('accepts a startPath argument', () => {
     const fs = setup();
-    expect(fs.find('notes.txt', '/school/history')).toEqual([
-      '/school/history/notes.txt',
-    ]);
+    expect(fs.find('notes.txt', '/school/history')).toEqual(['/school/history/notes.txt']);
   });
 });
 
@@ -61,15 +59,7 @@ describe('FileSystem — walk', () => {
       seen.push(path);
     });
     expect(seen.sort()).toEqual(
-      [
-        '/',
-        '/a',
-        '/a/b',
-        '/a/b/file1.txt',
-        '/a/c',
-        '/a/c/file2.log',
-        '/top.txt',
-      ].sort(),
+      ['/', '/a', '/a/b', '/a/b/file1.txt', '/a/c', '/a/c/file2.log', '/top.txt'].sort(),
     );
   });
 
@@ -84,6 +74,17 @@ describe('FileSystem — walk', () => {
     expect(seen).toContain('/a/c/file2.log');
   });
 
+  it('walk exposes snapshots instead of live mutable nodes', () => {
+    const fs = tree();
+    fs.walk('/a', (node) => {
+      if (node.name === 'b') {
+        (node as unknown as { children?: { clear(): void } }).children?.clear();
+      }
+    });
+
+    expect(fs.ls('/a/b')).toEqual(['file1.txt']);
+  });
+
   it('findFirst returns the first path matching a regex', () => {
     const fs = tree();
     const hit = fs.findFirst(/\.log$/);
@@ -95,9 +96,16 @@ describe('FileSystem — walk', () => {
     expect(fs.findFirst(/\.never$/)).toBeNull();
   });
 
+  it('findFirst can safely reuse a global regex', () => {
+    const fs = tree();
+    const pattern = /^a/g;
+
+    expect(fs.findFirst(pattern)).toBe('/a');
+    expect(fs.findFirst(pattern)).toBe('/a');
+  });
+
   it('findFirst halts traversal — does not visit siblings after the match', () => {
     const fs = tree();
-    const visited: string[] = [];
     // wrap walk via findFirst — count visits via a side-effecting walk to a known match
     // Instead, prove early-exit by mutating after first match: build a tree, then verify
     // findFirst on a regex matching the FIRST node (/a) returns /a (the very first dir

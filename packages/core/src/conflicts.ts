@@ -1,4 +1,5 @@
-import { DirectoryNode, FileNode, FsNode, isDirectory, isFile } from './nodes';
+import { DirectoryNode, FileNode, type FsNode, isDirectory, isFile } from './nodes';
+import { clonePermissions } from './permissions';
 
 /** Policy for file-vs-file (or file-vs-dir) collisions during move/copy. */
 export type ConflictPolicy = 'error' | 'overwrite' | 'rename';
@@ -28,10 +29,12 @@ export function cloneNodeTree(
   if (isFile(source)) {
     const f = new FileNode(newName ?? source.name, newParent);
     f.content = source.content;
+    f.permissions = clonePermissions(source.permissions);
     return f;
   }
   if (isDirectory(source)) {
     const d = new DirectoryNode(newName ?? source.name, newParent);
+    d.permissions = clonePermissions(source.permissions);
     for (const [, child] of source.children) {
       const cloned = cloneNodeTree(child, d);
       d.children.set(cloned.name, cloned);
