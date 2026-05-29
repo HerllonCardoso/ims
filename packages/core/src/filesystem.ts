@@ -180,6 +180,24 @@ export class FileSystem {
     node.parent = null;
   }
 
+  remove(path: string, opts: { recursive?: boolean } = {}): void {
+    const node = this.resolveNode(path);
+    if (node.parent === null) {
+      throw new InvalidOperationError('Cannot remove the root directory');
+    }
+    this.assertPermission(node.parent, 'write');
+    if (isDirectory(node)) {
+      if (node.children.size > 0 && !opts.recursive) {
+        throw new DirectoryNotEmptyError(`Directory not empty: ${path}`);
+      }
+      if (this.isAncestorOrSelf(node, this.cwd)) {
+        this.cwd = node.parent;
+      }
+    }
+    node.parent.children.delete(node.name);
+    node.parent = null;
+  }
+
   createFile(path: string, opts: { recursive?: boolean } = {}): void {
     const { parent, name } = this.resolveParent(path, opts);
     this.assertPermission(parent, 'write');
