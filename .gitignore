@@ -1,5 +1,8 @@
 node_modules/
-dist/
-*.tsbuildinfo
+**/dist/
+**/*.tsbuildinfo
 .DS_Store
+.vscode/
 coverage/
+packages/server/dist/public/
+packages/client/dist/

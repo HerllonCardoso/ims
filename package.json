@@ -1,23 +1,33 @@
 {
   "name": "in-memory-filesystem",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "In-memory filesystem with a CLI demo",
+  "description": "In-memory filesystem with a CLI and web explorer",
   "license": "MIT",
   "author": "Herllon Cardoso",
+  "workspaces": ["packages/*"],
   "scripts": {
-    "start": "ts-node src/cli/index.ts",
+    "start": "npm run start -w @ims/cli",
     "test": "jest",
     "test:watch": "jest --watch",
-    "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc -b --pretty",
+    "build": "tsc -b",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/jest": "^29.5.12",
     "@types/node": "^22.10.0",
+    "eslint": "^10.4.1",
+    "globals": "^17.6.0",
     "jest": "^29.7.0",
+    "prettier": "^3.8.3",
     "ts-jest": "^29.1.4",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.60.0"
   }
 }
