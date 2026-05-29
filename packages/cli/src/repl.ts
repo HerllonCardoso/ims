@@ -1,6 +1,7 @@
 import * as readline from 'node:readline';
-import { FileSystem } from '../core/filesystem';
+import { FileSystem } from '@ims/core';
 import { runCommand } from './commands';
+import { complete } from './completion';
 
 export function startRepl(): void {
   const fs = new FileSystem();
@@ -8,6 +9,7 @@ export function startRepl(): void {
     input: process.stdin,
     output: process.stdout,
     prompt: '',
+    completer: (line: string) => complete(fs, line),
   });
   const prompt = () => rl.setPrompt(`${fs.pwd()}$ `);
 

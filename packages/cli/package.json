@@ -1,0 +1,17 @@
+{
+  "name": "@ims/cli",
+  "version": "0.2.0",
+  "private": true,
+  "bin": {
+    "ims": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "build": "tsc -b",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@ims/core": "0.2.0"
+  }
+}

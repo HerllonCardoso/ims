@@ -1,7 +1,10 @@
-import { FileSystem, WalkVisitor } from '../core/filesystem';
-import { FsNode } from '../core/nodes';
-import { FileSystemError } from '../core/errors';
-import { ConflictPolicy } from '../core/conflicts';
+import {
+  FileSystem,
+  FileSystemError,
+  type ConflictPolicy,
+  type PermissionUpdate,
+  type WalkVisitor,
+} from '@ims/core';
 
 type Print = (line: string) => void;
 
@@ -13,7 +16,7 @@ interface Parsed {
 }
 
 function parse(line: string): Parsed {
-  const tokens = line.trim().split(/\s+/);
+  const tokens = tokenize(line.trim());
   const command = tokens.shift() ?? '';
   const flags = new Set<string>();
   while (tokens[0]?.startsWith('-')) {
@@ -21,10 +24,52 @@ function parse(line: string): Parsed {
   }
   const args = [...tokens];
   // For commands that take "<path> <content...>" (like `write`), `rest` is the tail
-  // after the first argument joined back with spaces. Whitespace within the content is
-  // collapsed to a single space — acceptable for a take-home REPL without quoted strings.
+  // after the first argument joined back with spaces. Whitespace within unquoted content
+  // is collapsed to a single space, keeping the REPL parser intentionally small.
   const rest = args.slice(1).join(' ');
   return { command, flags, args, rest };
+}
+
+function tokenize(line: string): string[] {
+  const tokens: string[] = [];
+  let current = '';
+  let quote: '"' | "'" | null = null;
+  let tokenStarted = false;
+
+  const push = () => {
+    if (tokenStarted) tokens.push(current);
+    current = '';
+    tokenStarted = false;
+  };
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+
+    if (quote) {
+      if (ch === quote) {
+        quote = null;
+      } else if (ch === '\\' && quote === '"' && i + 1 < line.length) {
+        current += line[++i];
+      } else {
+        current += ch;
+      }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      tokenStarted = true;
+    } else if (/\s/.test(ch)) {
+      push();
+    } else {
+      current += ch;
+      tokenStarted = true;
+    }
+  }
+
+  if (quote) throw new Error(`Unclosed quote: ${quote}`);
+  push();
+  return tokens;
 }
 
 export function runCommand(fs: FileSystem, line: string, print: Print): void {
@@ -51,17 +96,15 @@ export function runCommand(fs: FileSystem, line: string, print: Print): void {
       case 'cat':
         return print(fs.readFile(required(args[0], 'cat <path>')));
       case 'mv':
-        return fs.move(
-          required(args[0], 'mv <src> <dest>'),
-          required(args[1], 'mv <src> <dest>'),
-          { onConflict: conflictFromFlags(flags), recursive: flags.has('p') },
-        );
+        return fs.move(required(args[0], 'mv <src> <dest>'), required(args[1], 'mv <src> <dest>'), {
+          onConflict: conflictFromFlags(flags),
+          recursive: flags.has('p'),
+        });
       case 'cp':
-        return fs.copy(
-          required(args[0], 'cp <src> <dest>'),
-          required(args[1], 'cp <src> <dest>'),
-          { onConflict: conflictFromFlags(flags), recursive: flags.has('p') },
-        );
+        return fs.copy(required(args[0], 'cp <src> <dest>'), required(args[1], 'cp <src> <dest>'), {
+          onConflict: conflictFromFlags(flags),
+          recursive: flags.has('p'),
+        });
       case 'find': {
         const hits = fs.find(required(args[0], 'find <name>'));
         if (hits.length > 0) print(hits.join('\n'));
@@ -77,10 +120,30 @@ export function runCommand(fs: FileSystem, line: string, print: Print): void {
         return printTree(fs, args[0] ?? fs.pwd(), print);
       case 'walk': {
         const collected: string[] = [];
-        const v: WalkVisitor = (_n: FsNode, p: string) => void collected.push(p);
+        const v: WalkVisitor = (_n, p) => void collected.push(p);
         fs.walk(args[0] ?? fs.pwd(), v);
         return print(collected.join('\n'));
       }
+      case 'useradd':
+        return fs.createUser(required(args[0], 'useradd <user>'));
+      case 'groupadd':
+        return fs.createGroup(required(args[0], 'groupadd <group>'));
+      case 'usermod':
+        if (!flags.has('a') || !flags.has('G')) {
+          throw new Error('Usage: usermod -aG <group> <user>');
+        }
+        return fs.addUserToGroup(
+          required(args[1], 'usermod -aG <group> <user>'),
+          required(args[0], 'usermod -aG <group> <user>'),
+        );
+      case 'su':
+        return fs.switchUser(required(args[0], 'su <user>'));
+      case 'whoami':
+        return print(fs.currentUser());
+      case 'grant':
+        return applyGrant(fs, args);
+      case 'revoke':
+        return applyRevoke(fs, args);
       case 'help':
         return print(HELP);
       default:
@@ -102,6 +165,37 @@ function conflictFromFlags(flags: Set<string>): ConflictPolicy {
   if (flags.has('f')) return 'overwrite';
   if (flags.has('n')) return 'rename';
   return 'error';
+}
+
+function parsePermissions(input: string | undefined): PermissionUpdate {
+  const token = required(input, 'grant <user|group> <name> <r|w|rw|none> <path>');
+  if (token === 'none') return {};
+  if (!/^[rw]+$/.test(token)) {
+    throw new Error('Permissions must be one of: r, w, rw, none');
+  }
+  return {
+    read: token.includes('r'),
+    write: token.includes('w'),
+  };
+}
+
+function applyGrant(fs: FileSystem, args: string[]): void {
+  const target = required(args[0], 'grant <user|group> <name> <r|w|rw|none> <path>');
+  const name = required(args[1], 'grant <user|group> <name> <r|w|rw|none> <path>');
+  const permissions = parsePermissions(args[2]);
+  const path = required(args[3], 'grant <user|group> <name> <r|w|rw|none> <path>');
+  if (target === 'user') return fs.grantUser(path, name, permissions);
+  if (target === 'group') return fs.grantGroup(path, name, permissions);
+  throw new Error('Usage: grant <user|group> <name> <r|w|rw|none> <path>');
+}
+
+function applyRevoke(fs: FileSystem, args: string[]): void {
+  const target = required(args[0], 'revoke <user|group> <name> <path>');
+  const name = required(args[1], 'revoke <user|group> <name> <path>');
+  const path = required(args[2], 'revoke <user|group> <name> <path>');
+  if (target === 'user') return fs.revokeUser(path, name);
+  if (target === 'group') return fs.revokeGroup(path, name);
+  throw new Error('Usage: revoke <user|group> <name> <path>');
 }
 
 function printTree(fs: FileSystem, path: string, print: Print): void {
@@ -131,6 +225,13 @@ const HELP = [
   '  findFirst <regex>              find first descendant whose name matches the regex',
   '  tree [path]               pretty-print subtree',
   '  walk [path]               list every descendant path',
+  '  useradd <user>                 create a user',
+  '  groupadd <group>               create a group',
+  '  usermod -aG <group> <user>     add a user to a group',
+  '  su <user>                      switch current user',
+  '  whoami                         print current user',
+  '  grant <user|group> <name> <r|w|rw|none> <path>',
+  '  revoke <user|group> <name> <path>',
   '  help                      show this message',
   '  exit                      leave the REPL',
 ].join('\n');

@@ -1,5 +1,5 @@
-import { FileSystem } from '../src/core/filesystem';
-import { runCommand } from '../src/cli/commands';
+import { FileSystem } from '@ims/core';
+import { runCommand } from '../src/commands';
 
 describe('CLI command dispatcher', () => {
   it('runs the worked example end-to-end', () => {
@@ -124,5 +124,61 @@ describe('CLI command dispatcher', () => {
     runCommand(fs, 'mv -n x.txt dest', (s) => out.push(s));
     runCommand(fs, 'ls dest', (s) => out.push(s));
     expect(out[out.length - 1]).toBe('x (1).txt  x.txt');
+  });
+
+  it('supports quoted paths with spaces', () => {
+    const fs = new FileSystem();
+    const out: string[] = [];
+    runCommand(fs, 'mkdir dest', (s) => out.push(s));
+    runCommand(fs, 'touch dest/y.txt', (s) => out.push(s));
+    runCommand(fs, 'touch y.txt', (s) => out.push(s));
+    runCommand(fs, 'write y.txt hello', (s) => out.push(s));
+    runCommand(fs, 'cp -n y.txt dest', (s) => out.push(s));
+    runCommand(fs, 'cat "dest/y (1).txt"', (s) => out.push(s));
+    expect(out[out.length - 1]).toBe('hello');
+  });
+
+  it('supports user, group, and grant commands', () => {
+    const fs = new FileSystem();
+    const out: string[] = [];
+    runCommand(fs, 'mkdir shared', (s) => out.push(s));
+    runCommand(fs, 'touch shared/readme.txt', (s) => out.push(s));
+    runCommand(fs, 'write shared/readme.txt hello team', (s) => out.push(s));
+    runCommand(fs, 'useradd alice', (s) => out.push(s));
+    runCommand(fs, 'groupadd engineering', (s) => out.push(s));
+    runCommand(fs, 'usermod -aG engineering alice', (s) => out.push(s));
+    runCommand(fs, 'grant group engineering r shared', (s) => out.push(s));
+    runCommand(fs, 'grant group engineering r shared/readme.txt', (s) => out.push(s));
+    runCommand(fs, 'su alice', (s) => out.push(s));
+    runCommand(fs, 'whoami', (s) => out.push(s));
+    runCommand(fs, 'ls shared', (s) => out.push(s));
+    runCommand(fs, 'cat shared/readme.txt', (s) => out.push(s));
+    runCommand(fs, 'write shared/readme.txt changed', (s) => out.push(s));
+
+    expect(out).toEqual([
+      'alice',
+      'readme.txt',
+      'hello team',
+      'PermissionDeniedError: Permission denied: alice lacks write on /shared/readme.txt',
+    ]);
+  });
+
+  it('supports revoking grants in the CLI', () => {
+    const fs = new FileSystem();
+    const out: string[] = [];
+    runCommand(fs, 'mkdir shared', (s) => out.push(s));
+    runCommand(fs, 'useradd alice', (s) => out.push(s));
+    runCommand(fs, 'grant user alice r shared', (s) => out.push(s));
+    runCommand(fs, 'su alice', (s) => out.push(s));
+    runCommand(fs, 'ls shared', (s) => out.push(s));
+    runCommand(fs, 'su root', (s) => out.push(s));
+    runCommand(fs, 'revoke user alice shared', (s) => out.push(s));
+    runCommand(fs, 'su alice', (s) => out.push(s));
+    runCommand(fs, 'ls shared', (s) => out.push(s));
+
+    expect(out).toEqual([
+      '',
+      'PermissionDeniedError: Permission denied: alice lacks read on /shared',
+    ]);
   });
 });
