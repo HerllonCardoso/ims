@@ -5,7 +5,9 @@
   "description": "In-memory filesystem with a CLI and web explorer",
   "license": "MIT",
   "author": "Herllon Cardoso",
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "start": "npm run start -w @ims/cli",
     "test": "jest",
