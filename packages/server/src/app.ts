@@ -2,6 +2,8 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { FileSystem } from '@ims/core';
 import { registerErrorHandler } from './errors';
 import { entriesRoutes } from './routes/entries';
+import { dirsRoutes } from './routes/dirs';
+import { filesRoutes } from './routes/files';
 
 export interface BuildAppOptions {
   fs?: FileSystem;
@@ -18,6 +20,8 @@ export function buildApp(opts: BuildAppOptions = {}): BuiltApp {
   const app = Fastify({ logger: opts.logger ?? false });
   app.get('/api/health', () => ({ ok: true }));
   void app.register(entriesRoutes, { fs });
+  void app.register(dirsRoutes, { fs });
+  void app.register(filesRoutes, { fs });
   registerErrorHandler(app);
   return { app, fs };
 }
