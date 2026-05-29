@@ -20,7 +20,7 @@ function isFastifyValidationError(err: unknown): err is FastifyError {
     typeof err === 'object' &&
     err !== null &&
     'validation' in err &&
-    Array.isArray((err as { validation: unknown }).validation)
+    Array.isArray(err.validation)
   );
 }
 

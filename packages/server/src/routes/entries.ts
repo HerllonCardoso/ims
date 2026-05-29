@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
-import { FileSystem } from '@ims/core';
+import type { FileSystem } from '@ims/core';
 import type { EntrySummary, ListEntriesResponse, StatResponse } from '@ims/shared';
 
 interface PathQuery {
@@ -12,16 +12,16 @@ const pathQuerySchema = {
   properties: { path: { type: 'string', minLength: 1 } },
 } as const;
 
-export async function entriesRoutes(
+export function entriesRoutes(
   app: FastifyInstance,
   opts: FastifyPluginOptions & { fs: FileSystem },
-): Promise<void> {
+): void {
   const { fs } = opts;
 
   app.get<{ Querystring: PathQuery }>(
     '/api/entries',
     { schema: { querystring: pathQuerySchema } },
-    async (req): Promise<ListEntriesResponse> => {
+    (req): ListEntriesResponse => {
       const entries: EntrySummary[] = fs.entries(req.query.path);
       return { path: req.query.path, entries };
     },
@@ -30,7 +30,7 @@ export async function entriesRoutes(
   app.get<{ Querystring: PathQuery }>(
     '/api/entries/stat',
     { schema: { querystring: pathQuerySchema } },
-    async (req): Promise<StatResponse> => {
+    (req): StatResponse => {
       const path = req.query.path;
       if (path === '/') {
         return { path: '/', name: '', kind: 'directory' };
