@@ -1,10 +1,10 @@
 import type { Config } from 'jest';
 
 const config: Config = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  testMatch: ['<rootDir>/tests/**/*.test.ts'],
-  collectCoverageFrom: ['src/**/*.ts'],
+  projects: [
+    '<rootDir>/packages/core',
+    '<rootDir>/packages/cli',
+  ],
 };
 
 export default config;
