@@ -5,6 +5,8 @@ import { entriesRoutes } from './routes/entries';
 import { dirsRoutes } from './routes/dirs';
 import { filesRoutes } from './routes/files';
 import { moveCopyRoutes } from './routes/move-copy';
+import { findRoutes } from './routes/find';
+import { treeRoutes } from './routes/tree';
 
 export interface BuildAppOptions {
   fs?: FileSystem;
@@ -24,6 +26,8 @@ export function buildApp(opts: BuildAppOptions = {}): BuiltApp {
   void app.register(dirsRoutes, { fs });
   void app.register(filesRoutes, { fs });
   void app.register(moveCopyRoutes, { fs });
+  void app.register(findRoutes, { fs });
+  void app.register(treeRoutes, { fs });
   registerErrorHandler(app);
   return { app, fs };
 }
