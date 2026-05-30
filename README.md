@@ -14,8 +14,7 @@ permissions for users and groups.
 ## Quick start
 
     npm install
-    npm test         # run the Jest suite
-    npm run coverage # run Jest with coverage
+    npm test         # run the Jest + Vitest suites
     npm run lint     # run ESLint
     npm run format:check
     npm start        # launch the interactive REPL
@@ -43,7 +42,7 @@ command names and path arguments (directory matches get a trailing `/`).
 
 ## Library API
 
-    import { FileSystem } from './src/core';
+    import { FileSystem } from '@ims/core';
 
     const fs = new FileSystem();
     fs.mkdir('school');
@@ -104,61 +103,6 @@ Errors are subclasses of `FileSystemError`: `InvalidPathError`, `NotFoundError`,
 `DirectoryNotEmptyError`, `InvalidOperationError`, `PermissionDeniedError`,
 `UserNotFoundError`, `GroupNotFoundError`.
 
-## Complexity
-
-Where `d` is the number of path segments resolved, `k` is the children of the target
-directory, and `n` is the number of nodes in the source / walked subtree. All child
-lookups are O(1) (`Map<string, FsNode>`), and every node has a parent pointer.
-
-| Method                                  | Complexity                                 | Why                                             |
-| --------------------------------------- | ------------------------------------------ | ----------------------------------------------- |
-| `pwd()`                                 | O(d)                                       | walks parent pointers from cwd to root          |
-| `cd(path)`                              | O(d)                                       | one Map lookup per segment                      |
-| `mkdir(path, …)`                        | O(d)                                       | resolve parent + single insert                  |
-| `ls(path?)`                             | O(d + k log k)                             | resolve + sort children                         |
-| `rmdir(path, …)`                        | O(d)                                       | single Map delete; subtree is detached and GC'd |
-| `createFile(path, …)`                   | O(d)                                       | resolve parent + single insert                  |
-| `writeFile(path, content)`              | O(d)                                       | content is stored by reference                  |
-| `readFile(path)`                        | O(d)                                       | returns the stored string                       |
-| `move(src, dest, …)` rename / cross-dir | O(d)                                       | pointer reassignment, no descendant rewrite     |
-| `move(src, dest, …)` with merge         | O(d + n)                                   | preflight + apply over the merged subtree       |
-| `copy(src, dest, …)`                    | O(d + n)                                   | deep clone of the source subtree                |
-| `find(name, …)`                         | O(d + n)                                   | pre-order walk, no early exit                   |
-| `findFirst(regex, …)`                   | O(d + n) worst, O(d + depth-of-match) best | pre-order walk, throws to halt on first hit     |
-| `walk(path, visit)`                     | O(d + n)                                   | pre-order; visitor can prune to reduce `n`      |
-
-## Concurrency
-
-The Node.js event loop is single-threaded, so every `FileSystem` method completes
-without interleaving and is atomic from a caller's perspective — no locking is needed
-or provided. Two consequences worth noting:
-
-- Move/copy do a recursive preflight (`assertCanPlaceInto`) before any mutation, so a
-  partial merge can't be observed even mid-throw. Combined with the synchronous event
-  loop, the tree never ends up in a half-applied state.
-- If this library were embedded in a multi-writer host (worker threads, a cluster of
-  processes sharing the tree, or a server with concurrent requests against one
-  `FileSystem` instance), it would need either an external mutex around mutating calls
-  or a redesign around an append-only log / per-node lock. The current node-tree model
-  assumes one writer at a time.
-
-## Design notes
-
-- A `DirectoryNode` holds children in a `Map<string, FsNode>` — O(1) child lookup,
-  insert, delete by name.
-- Each node has a parent pointer, so `move` is O(1) (no descendant paths to rewrite)
-  and `pwd` is O(depth).
-- Path parsing is a small pure module; every command shares the same resolver, so the
-  path-operations extension was a natural foundation rather than a bolt-on.
-- Move/copy share one core routine (`placeInto`) parameterised by move-vs-copy and
-  conflict policy.
-- Move/copy preflight recursive merges before mutating the tree, so failed operations
-  do not leave partially moved or copied children behind.
-- Permission checks are centralized in the core facade. The node model stores ACLs, but
-  path parsing, CLI parsing, and traversal code do not duplicate permission logic.
-- Type guards (`isFile`, `isDirectory`) replace `as` casts throughout the codebase for
-  safer narrowing.
-
 ## Web explorer
 
 A browser UI sits over the same in-memory `FileSystem`. The library is unchanged; the server wraps a singleton instance behind HTTP routes, and the client renders server truth.
@@ -179,30 +123,19 @@ The filesystem is in-memory: restarting the server resets it.
 
 ### HTTP API summary
 
-| Method | Path | Maps to |
-|---|---|---|
-| GET | `/api/entries?path=…` | `ls` |
-| GET | `/api/entries/stat?path=…` | resolve node |
-| POST | `/api/dirs` | `mkdir` |
-| POST | `/api/files` | `createFile` |
-| GET/PUT | `/api/files/content` | `readFile` / `writeFile` |
-| DELETE | `/api/entries?path=…&recursive=…` | `remove` |
-| POST | `/api/move` | `move` |
-| POST | `/api/copy` | `copy` |
-| GET | `/api/find?name=…` | `find` |
-| GET | `/api/find/first?pattern=…` | `findFirst` |
-| GET | `/api/tree?path=…&depth=…` | bounded `walk` |
-
-## Out of scope (and what would change)
-
-- **Browser file explorer** — now implemented; see the "Web explorer" section above.
-- **Symlinks / hardlinks** — would require splitting nodes into inodes + directory
-  entries (multiple names referencing one inode). The current node-tree model is
-  intentional because it gives the best scalability for the operations actually in
-  scope.
-- **Streaming** — would change `readFile`/`writeFile` to return/accept Node streams
-  and require keeping reader/writer handles valid across moves.
-- **Binary content** — swap `string` for `Uint8Array`; the API shape doesn't change.
+| Method  | Path                              | Maps to                  |
+| ------- | --------------------------------- | ------------------------ |
+| GET     | `/api/entries?path=…`             | `ls`                     |
+| GET     | `/api/entries/stat?path=…`        | resolve node             |
+| POST    | `/api/dirs`                       | `mkdir`                  |
+| POST    | `/api/files`                      | `createFile`             |
+| GET/PUT | `/api/files/content`              | `readFile` / `writeFile` |
+| DELETE  | `/api/entries?path=…&recursive=…` | `remove`                 |
+| POST    | `/api/move`                       | `move`                   |
+| POST    | `/api/copy`                       | `copy`                   |
+| GET     | `/api/find?name=…`                | `find`                   |
+| GET     | `/api/find/first?pattern=…`       | `findFirst`              |
+| GET     | `/api/tree?path=…&depth=…`        | bounded `walk`           |
 
 ## Project layout
 
@@ -215,22 +148,7 @@ The filesystem is in-memory: restarting the server resets it.
 
 ## Tests
 
-127 tests across 11 files cover every public method, edge cases, error paths, and the
-worked example.
-
-Run coverage locally with:
-
-    npm run coverage
-
-Current coverage snapshot:
-
-| Area             | Statements | Branches | Functions | Lines  |
-| ---------------- | ---------- | -------- | --------- | ------ |
-| All files        | 84.11%     | 75.10%   | 86.20%    | 85.95% |
-| Core             | 91.49%     | 79.48%   | 95.16%    | 92.91% |
-| `filesystem.ts`  | 91.71%     | 80.29%   | 97.95%    | 92.64% |
-| `permissions.ts` | 100%       | 75.00%   | 100%      | 100%   |
-
-The lower total coverage is from the interactive REPL entrypoints
-(`src/cli/index.ts` and `src/cli/repl.ts`), which are thin wrappers around the tested
-command dispatcher and core library.
+230 tests across 32 files cover every public method, edge cases, error paths, the
+worked example, the HTTP routes, and the client dialogs. Backend
+suites run under Jest (`packages/core`, `packages/cli`, `packages/server`); the client
+runs under Vitest (`packages/client`). `npm test` runs both.
