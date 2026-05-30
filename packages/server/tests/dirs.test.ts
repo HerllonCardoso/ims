@@ -3,7 +3,7 @@ import type { CreateResponse, ErrorResponse } from '@ims/shared';
 
 describe('POST /api/dirs', () => {
   it('creates a directory', async () => {
-    const { app, fs } = build();
+    const { app, fs } = await build();
     const res = await app.inject({
       method: 'POST',
       url: '/api/dirs',
@@ -15,7 +15,7 @@ describe('POST /api/dirs', () => {
   });
 
   it('creates intermediate dirs with recursive: true', async () => {
-    const { app, fs } = build();
+    const { app, fs } = await build();
     const res = await app.inject({
       method: 'POST',
       url: '/api/dirs',
@@ -26,7 +26,7 @@ describe('POST /api/dirs', () => {
   });
 
   it('409 when already exists', async () => {
-    const { app, fs } = build();
+    const { app, fs } = await build();
     fs.mkdir('/d');
     const res = await app.inject({
       method: 'POST',
@@ -38,7 +38,7 @@ describe('POST /api/dirs', () => {
   });
 
   it('400 on malformed body', async () => {
-    const { app } = build();
+    const { app } = await build();
     const res = await app.inject({ method: 'POST', url: '/api/dirs', payload: {} });
     expect(res.statusCode).toBe(400);
   });
@@ -46,7 +46,7 @@ describe('POST /api/dirs', () => {
 
 describe('POST /api/files', () => {
   it('creates an empty file', async () => {
-    const { app, fs } = build();
+    const { app, fs } = await build();
     const res = await app.inject({
       method: 'POST',
       url: '/api/files',
@@ -57,7 +57,7 @@ describe('POST /api/files', () => {
   });
 
   it('409 when already exists', async () => {
-    const { app, fs } = build();
+    const { app, fs } = await build();
     fs.createFile('/a.txt');
     const res = await app.inject({
       method: 'POST',

@@ -3,7 +3,7 @@ import type { ErrorResponse } from '@ims/shared';
 
 describe('error envelope', () => {
   it('maps NotFoundError to 404', async () => {
-    const { app } = build();
+    const { app } = await build();
     const res = await app.inject({ method: 'GET', url: '/api/entries?path=/nope' });
     expect(res.statusCode).toBe(404);
     const body = res.json<ErrorResponse>();
@@ -12,7 +12,7 @@ describe('error envelope', () => {
   });
 
   it('maps AlreadyExistsError to 409', async () => {
-    const { app, fs } = build();
+    const { app, fs } = await build();
     fs.createFile('/a.txt');
     const res = await app.inject({
       method: 'POST',
@@ -25,7 +25,7 @@ describe('error envelope', () => {
   });
 
   it('maps NotADirectoryError to 400', async () => {
-    const { app, fs } = build();
+    const { app, fs } = await build();
     fs.createFile('/a.txt');
     const res = await app.inject({ method: 'GET', url: '/api/entries?path=/a.txt' });
     expect(res.statusCode).toBe(400);
@@ -33,7 +33,7 @@ describe('error envelope', () => {
   });
 
   it('maps DirectoryNotEmptyError to 409', async () => {
-    const { app, fs } = build();
+    const { app, fs } = await build();
     fs.mkdir('/d');
     fs.createFile('/d/a');
     const res = await app.inject({ method: 'DELETE', url: '/api/entries?path=/d' });
@@ -42,7 +42,7 @@ describe('error envelope', () => {
   });
 
   it('maps Fastify validation failure to 400', async () => {
-    const { app } = build();
+    const { app } = await build();
     const res = await app.inject({
       method: 'POST',
       url: '/api/dirs',

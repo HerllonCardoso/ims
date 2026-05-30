@@ -3,7 +3,7 @@ import type { FindFirstResponse, FindResponse } from '@ims/shared';
 
 describe('GET /api/find', () => {
   it('returns every match by exact name', async () => {
-    const { app, fs } = build();
+    const { app, fs } = await build();
     fs.mkdir('/a');
     fs.createFile('/a/x');
     fs.mkdir('/b');
@@ -14,7 +14,7 @@ describe('GET /api/find', () => {
   });
 
   it('returns empty matches when nothing found', async () => {
-    const { app } = build();
+    const { app } = await build();
     const res = await app.inject({ method: 'GET', url: '/api/find?name=x&from=/' });
     expect(res.json<FindResponse>().matches).toEqual([]);
   });
@@ -22,7 +22,7 @@ describe('GET /api/find', () => {
 
 describe('GET /api/find/first', () => {
   it('returns the first regex match', async () => {
-    const { app, fs } = build();
+    const { app, fs } = await build();
     fs.mkdir('/a');
     fs.createFile('/a/foo');
     const res = await app.inject({
@@ -33,7 +33,7 @@ describe('GET /api/find/first', () => {
   });
 
   it('returns null when no match', async () => {
-    const { app } = build();
+    const { app } = await build();
     const res = await app.inject({
       method: 'GET',
       url: '/api/find/first?pattern=' + encodeURIComponent('^foo$') + '&from=/',

@@ -3,7 +3,7 @@ import type { TreeResponse } from '@ims/shared';
 
 describe('GET /api/tree', () => {
   it('returns only immediate children at depth=1', async () => {
-    const { app, fs } = build();
+    const { app, fs } = await build();
     fs.mkdir('/a');
     fs.createFile('/a/x');
     fs.createFile('/b');
@@ -18,7 +18,7 @@ describe('GET /api/tree', () => {
   });
 
   it('caps at depth=N', async () => {
-    const { app, fs } = build();
+    const { app, fs } = await build();
     fs.mkdir('/a');
     fs.mkdir('/a/b');
     fs.mkdir('/a/b/c');

@@ -3,7 +3,7 @@ import type { ErrorResponse, MoveCopyResponse } from '@ims/shared';
 
 describe('POST /api/move', () => {
   it('moves a file', async () => {
-    const { app, fs } = build();
+    const { app, fs } = await build();
     fs.createFile('/a.txt');
     fs.mkdir('/d');
     const res = await app.inject({
@@ -17,7 +17,7 @@ describe('POST /api/move', () => {
   });
 
   it('409 on conflict with default error policy', async () => {
-    const { app, fs } = build();
+    const { app, fs } = await build();
     fs.createFile('/a');
     fs.createFile('/b');
     const res = await app.inject({
@@ -30,7 +30,7 @@ describe('POST /api/move', () => {
   });
 
   it('overwrites with onConflict: overwrite', async () => {
-    const { app, fs } = build();
+    const { app, fs } = await build();
     fs.createFile('/a');
     fs.writeFile('/a', 'src');
     fs.createFile('/b');
@@ -45,7 +45,7 @@ describe('POST /api/move', () => {
   });
 
   it('renames with onConflict: rename', async () => {
-    const { app, fs } = build();
+    const { app, fs } = await build();
     fs.createFile('/a');
     fs.createFile('/b');
     const res = await app.inject({
@@ -58,7 +58,7 @@ describe('POST /api/move', () => {
   });
 
   it('creates intermediate dest dirs with recursive: true', async () => {
-    const { app, fs } = build();
+    const { app, fs } = await build();
     fs.createFile('/a');
     const res = await app.inject({
       method: 'POST',
@@ -72,7 +72,7 @@ describe('POST /api/move', () => {
 
 describe('POST /api/copy', () => {
   it('copies a file leaving the source intact', async () => {
-    const { app, fs } = build();
+    const { app, fs } = await build();
     fs.createFile('/a');
     fs.writeFile('/a', 'hello');
     fs.mkdir('/d');
@@ -87,7 +87,7 @@ describe('POST /api/copy', () => {
   });
 
   it('409 on copy conflict', async () => {
-    const { app, fs } = build();
+    const { app, fs } = await build();
     fs.createFile('/a');
     fs.createFile('/b');
     const res = await app.inject({
