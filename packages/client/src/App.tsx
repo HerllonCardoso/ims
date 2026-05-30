@@ -23,7 +23,13 @@ export type DialogState =
   | { kind: 'delete'; path: string; isDirectory: boolean }
   | { kind: 'move'; src: string }
   | { kind: 'copy'; src: string }
-  | { kind: 'conflict'; op: 'move' | 'copy'; src: string; dest: string; onChoose: (p: ConflictPolicy | null) => void }
+  | {
+      kind: 'conflict';
+      op: 'move' | 'copy';
+      src: string;
+      dest: string;
+      onChoose: (p: ConflictPolicy | null) => void;
+    }
   | { kind: 'find' };
 
 export default function App(): JSX.Element {
@@ -49,11 +55,7 @@ export default function App(): JSX.Element {
         <div className="flex items-center gap-4 border-b border-surface-2 px-6 py-4">
           <Breadcrumb path={viewedPath} onNavigate={setViewedPath} />
         </div>
-        <Toolbar
-          viewedPath={viewedPath}
-          isFile={isFile}
-          onDialog={setDialog}
-        />
+        <Toolbar viewedPath={viewedPath} isFile={isFile} onDialog={setDialog} />
         <div className="flex-1 overflow-auto px-6 pb-6">
           {isFile ? (
             <FileView path={viewedPath} treeRevision={treeRevision} onSaved={bumpTree} />

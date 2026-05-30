@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { api } from '@/api/client';
-import { ApiError } from '@/api/request';
+import { errorMessage, isApiErrorCode, isErrorLike } from '@/api/errors';
 
 interface Props {
   path: string;
@@ -28,15 +28,24 @@ export function DeleteConfirmDialog({ path, isDirectory, onClose, onDeleted }: P
   async function submit(): Promise<void> {
     setBusy(true);
     try {
-      await api.remove(path, recursive);
+      const result: unknown = await api.remove(path, recursive);
+      if (isErrorLike(result)) {
+        if (isApiErrorCode(result, 409, 'DirectoryNotEmptyError')) {
+          setRecursive(true);
+          toast.error('Directory is not empty. Toggle "Recursive" to delete it and all contents.');
+        } else {
+          toast.error(errorMessage(result));
+        }
+        return;
+      }
       onDeleted();
       onClose();
     } catch (e) {
-      if (e instanceof ApiError && e.status === 409 && e.code === 'DirectoryNotEmptyError') {
+      if (isApiErrorCode(e, 409, 'DirectoryNotEmptyError')) {
         setRecursive(true);
         toast.error('Directory is not empty. Toggle "Recursive" to delete it and all contents.');
       } else {
-        toast.error(e instanceof Error ? e.message : String(e));
+        toast.error(errorMessage(e));
       }
     } finally {
       setBusy(false);
@@ -67,7 +76,13 @@ export function DeleteConfirmDialog({ path, isDirectory, onClose, onDeleted }: P
             <Button variant="outline">Cancel</Button>
           </AlertDialogCancel>
           <AlertDialogAction asChild>
-            <Button variant="destructive" disabled={busy} onClick={() => void submit()}>
+            <Button
+              variant="destructive"
+              disabled={busy}
+              onClick={() => {
+                void submit().catch(() => undefined);
+              }}
+            >
               Delete
             </Button>
           </AlertDialogAction>

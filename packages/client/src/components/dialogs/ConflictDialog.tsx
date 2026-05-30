@@ -25,7 +25,8 @@ export function ConflictDialog({ op, src, dest, onChoose }: Props): JSX.Element 
           <AlertDialogDescription>
             {op === 'move' ? 'Moving' : 'Copying'}{' '}
             <span className="font-bold text-foreground">{src}</span> to{' '}
-            <span className="font-bold text-foreground">{dest}</span> would overwrite an existing entry.
+            <span className="font-bold text-foreground">{dest}</span> would overwrite an existing
+            entry.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

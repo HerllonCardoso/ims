@@ -53,8 +53,5 @@ export const api = {
     ),
 
   tree: (path: string, depth: number) =>
-    request<TreeResponse>(
-      'GET',
-      `/api/tree?path=${encodeURIComponent(path)}&depth=${depth}`,
-    ),
+    request<TreeResponse>('GET', `/api/tree?path=${encodeURIComponent(path)}&depth=${depth}`),
 };

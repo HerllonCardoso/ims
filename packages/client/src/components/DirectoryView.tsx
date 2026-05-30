@@ -16,7 +16,13 @@ interface Props {
   onMutated: () => void;
 }
 
-export function DirectoryView({ path, treeRevision, onNavigate, onDialog, onMutated }: Props): JSX.Element {
+export function DirectoryView({
+  path,
+  treeRevision,
+  onNavigate,
+  onDialog,
+  onMutated,
+}: Props): JSX.Element {
   const { data, error, loading } = useApi(() => api.listEntries(path), [path], treeRevision);
   const [menu, setMenu] = useState<string | null>(null);
 
@@ -67,9 +73,7 @@ export function DirectoryView({ path, treeRevision, onNavigate, onDialog, onMuta
         void performMove(src, childPath(name));
       }}
     >
-      {data.entries.length === 0 && (
-        <div className="text-foreground-muted">Empty directory.</div>
-      )}
+      {data.entries.length === 0 && <div className="text-foreground-muted">Empty directory.</div>}
       <ul className="flex flex-col gap-1">
         {data.entries.map((e) => {
           const p = childPath(e.name);
