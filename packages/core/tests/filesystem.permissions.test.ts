@@ -67,6 +67,37 @@ describe('FileSystem - permissions and users', () => {
     expect(fs.readFile('/workspace/note.txt')).toBe('owned by alice');
   });
 
+  it('revokeGroup removes a group grant so members lose access', () => {
+    const fs = new FileSystem();
+    fs.mkdir('/shared');
+    fs.createUser('alice');
+    fs.createGroup('engineering');
+    fs.addUserToGroup('alice', 'engineering');
+    fs.grantGroup('/shared', 'engineering', { read: true });
+
+    fs.switchUser('alice');
+    expect(fs.ls('/shared')).toEqual([]);
+
+    fs.switchUser('root');
+    fs.revokeGroup('/shared', 'engineering');
+
+    fs.switchUser('alice');
+    expect(() => fs.ls('/shared')).toThrow(PermissionDeniedError);
+  });
+
+  it('revokeGroup requires root and a known group', () => {
+    const fs = new FileSystem();
+    fs.mkdir('/shared');
+    fs.createUser('alice');
+    fs.createGroup('engineering');
+
+    expect(() => fs.revokeGroup('/shared', 'missing')).toThrow(GroupNotFoundError);
+
+    fs.grantUser('/shared', 'alice', { read: true });
+    fs.switchUser('alice');
+    expect(() => fs.revokeGroup('/shared', 'engineering')).toThrow(PermissionDeniedError);
+  });
+
   it('validates users and groups for permission management', () => {
     const fs = new FileSystem();
     fs.mkdir('/project');
