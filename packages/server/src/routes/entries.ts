@@ -48,6 +48,28 @@ export function entriesRoutes(
       return { path, name, kind: found.kind };
     },
   );
+
+  app.delete<{ Querystring: { path: string; recursive?: string } }>(
+    '/api/entries',
+    {
+      schema: {
+        querystring: {
+          type: 'object',
+          required: ['path'],
+          properties: {
+            path: { type: 'string', minLength: 1 },
+            recursive: { type: 'string', enum: ['true', 'false'] },
+          },
+        },
+      },
+    },
+    (req, reply) => {
+      const recursive = req.query.recursive === 'true';
+      fs.remove(req.query.path, { recursive });
+      reply.status(204);
+      return null;
+    },
+  );
 }
 
 function parentOf(path: string): string {
