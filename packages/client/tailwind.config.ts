@@ -30,21 +30,8 @@ const config: Config = {
         card: 'var(--shadow-card)',
       },
       fontFamily: {
-        sans: [
-          '-apple-system',
-          '"Helvetica Neue"',
-          'helvetica',
-          'arial',
-          'sans-serif',
-        ],
-        mono: [
-          'ui-monospace',
-          'SFMono-Regular',
-          'Menlo',
-          'Monaco',
-          'Consolas',
-          'monospace',
-        ],
+        sans: ['-apple-system', '"Helvetica Neue"', 'helvetica', 'arial', 'sans-serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
       },
       letterSpacing: {
         button: '1.4px',
