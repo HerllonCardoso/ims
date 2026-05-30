@@ -7,5 +7,9 @@
   "scripts": {
     "build": "tsc -b",
     "test": "jest"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^22.19.19"
   }
 }
