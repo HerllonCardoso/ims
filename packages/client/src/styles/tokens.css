@@ -1,0 +1,48 @@
+:root {
+  /* Surfaces */
+  --background: #121212;
+  --surface: #181818;
+  --surface-2: #1f1f1f;
+  --card: #252525;
+
+  /* Text */
+  --foreground: #ffffff;
+  --foreground-muted: #b3b3b3;
+
+  /* Brand */
+  --primary: #1ed760;
+  --primary-foreground: #000000;
+
+  /* Semantic */
+  --destructive: #f3727f;
+  --warning: #ffa42b;
+  --info: #539df5;
+
+  /* Borders */
+  --border: #4d4d4d;
+  --border-light: #7c7c7c;
+
+  /* Shadows */
+  --shadow-dialog: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 8px 8px rgba(0, 0, 0, 0.3);
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-pill: 9999px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    -apple-system, 'Helvetica Neue', helvetica, arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
