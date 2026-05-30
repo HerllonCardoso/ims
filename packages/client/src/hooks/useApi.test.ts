@@ -12,13 +12,13 @@ describe('useApi', () => {
   });
 
   it('refetches when revision changes', async () => {
-    const fetcher = vi
-      .fn()
-      .mockResolvedValueOnce({ n: 1 })
-      .mockResolvedValueOnce({ n: 2 });
-    const { result, rerender } = renderHook(({ rev }: { rev: number }) => useApi(fetcher, [], rev), {
-      initialProps: { rev: 0 },
-    });
+    const fetcher = vi.fn().mockResolvedValueOnce({ n: 1 }).mockResolvedValueOnce({ n: 2 });
+    const { result, rerender } = renderHook(
+      ({ rev }: { rev: number }) => useApi(fetcher, [], rev),
+      {
+        initialProps: { rev: 0 },
+      },
+    );
     await waitFor(() => expect(result.current.data).toEqual({ n: 1 }));
     rerender({ rev: 1 });
     await waitFor(() => expect(result.current.data).toEqual({ n: 2 }));

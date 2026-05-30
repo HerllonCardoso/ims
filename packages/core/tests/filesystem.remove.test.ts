@@ -1,9 +1,5 @@
 import { FileSystem } from '../src';
-import {
-  DirectoryNotEmptyError,
-  InvalidOperationError,
-  NotFoundError,
-} from '../src/errors';
+import { DirectoryNotEmptyError, InvalidOperationError, NotFoundError } from '../src/errors';
 
 describe('FileSystem.remove', () => {
   it('removes a file', () => {

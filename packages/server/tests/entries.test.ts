@@ -24,6 +24,20 @@ describe('GET /api/entries', () => {
   });
 });
 
+describe('GET /api/entries — paths with spaces', () => {
+  it('lists a directory whose name contains spaces', async () => {
+    const { app, fs } = await build();
+    fs.mkdir('/new folder 2');
+    fs.createFile('/new folder 2/a.txt');
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/entries?path=${encodeURIComponent('/new folder 2')}`,
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json<ListEntriesResponse>().entries).toEqual([{ name: 'a.txt', kind: 'file' }]);
+  });
+});
+
 describe('GET /api/entries/stat', () => {
   it('returns stat for a file', async () => {
     const { app, fs } = await build();

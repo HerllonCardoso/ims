@@ -10,7 +10,10 @@ beforeEach(() => {
 describe('request', () => {
   it('returns parsed JSON on 2xx', async () => {
     mockFetch.mockResolvedValueOnce(
-      new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } }),
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
     );
     const data = await request<{ ok: boolean }>('GET', '/api/health');
     expect(data).toEqual({ ok: true });

@@ -28,4 +28,20 @@ describe('GET /api/tree', () => {
     const b = a.children!.find((c) => c.name === 'b')!;
     expect(b.children).toBeUndefined();
   });
+
+  it('404s for missing roots even at depth=0', async () => {
+    const { app } = await build();
+    const res = await app.inject({ method: 'GET', url: '/api/tree?path=/missing&depth=0' });
+
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('reports file roots as files at depth=0', async () => {
+    const { app, fs } = await build();
+    fs.createFile('/f');
+    const res = await app.inject({ method: 'GET', url: '/api/tree?path=/f&depth=0' });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json<TreeResponse>().root).toEqual({ name: 'f', path: '/f', kind: 'file' });
+  });
 });
