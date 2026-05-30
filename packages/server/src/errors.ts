@@ -40,14 +40,4 @@ export function registerErrorHandler(app: FastifyInstance): void {
     return reply.status(500).send(body);
   });
 
-  app.setNotFoundHandler((req, reply) => {
-    if (req.url.startsWith('/api')) {
-      const body: ErrorResponse = {
-        error: 'NotFoundError',
-        message: `Route not found: ${req.url}`,
-      };
-      return reply.status(404).send(body);
-    }
-    reply.status(404).send();
-  });
 }

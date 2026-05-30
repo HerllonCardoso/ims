@@ -50,6 +50,15 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<BuiltApp> {
       }
       return reply.sendFile('index.html');
     });
+  } else {
+    app.setNotFoundHandler((req, reply) => {
+      if (req.url.startsWith('/api')) {
+        return reply
+          .status(404)
+          .send({ error: 'NotFoundError', message: `Route not found: ${req.url}` });
+      }
+      return reply.status(404).send();
+    });
   }
 
   return { app, fs: filesystem };
