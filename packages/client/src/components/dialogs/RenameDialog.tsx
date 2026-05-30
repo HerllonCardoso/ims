@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api } from '@/api/client';
-import { ApiError } from '@/api/request';
+import { errorMessage, isApiErrorCode, isErrorLike } from '@/api/errors';
 import type { ConflictPolicy } from '@ims/shared';
 
 interface Props {
@@ -31,7 +31,13 @@ function parentOf(path: string): string {
   return idx === 0 ? '/' : path.slice(0, idx);
 }
 
-export function RenameDialog({ path, currentName, onClose, onRenamed, onConflict }: Props): JSX.Element {
+export function RenameDialog({
+  path,
+  currentName,
+  onClose,
+  onRenamed,
+  onConflict,
+}: Props): JSX.Element {
   const [name, setName] = useState(currentName);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -45,12 +51,8 @@ export function RenameDialog({ path, currentName, onClose, onRenamed, onConflict
     setErr(null);
     const parent = parentOf(path);
     const dest = parent === '/' ? `/${name}` : `${parent}/${name}`;
-    try {
-      await api.move({ src: path, dest });
-      onRenamed(dest);
-      onClose();
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 409 && e.code === 'AlreadyExistsError') {
+    const handleError = (e: unknown): void => {
+      if (isApiErrorCode(e, 409, 'AlreadyExistsError')) {
         onClose();
         onConflict(path, dest, (policy) => {
           if (!policy) return;
@@ -61,7 +63,19 @@ export function RenameDialog({ path, currentName, onClose, onRenamed, onConflict
         });
         return;
       }
-      setErr(e instanceof Error ? e.message : String(e));
+      setErr(errorMessage(e));
+    };
+
+    try {
+      const result: unknown = await api.move({ src: path, dest });
+      if (isErrorLike(result)) {
+        handleError(result);
+        return;
+      }
+      onRenamed(dest);
+      onClose();
+    } catch (e) {
+      handleError(e);
     } finally {
       setBusy(false);
     }
@@ -78,7 +92,7 @@ export function RenameDialog({ path, currentName, onClose, onRenamed, onConflict
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') void submit();
+            if (e.key === 'Enter') void submit().catch(() => undefined);
           }}
         />
         {err && <p className="text-[14px] text-destructive">{err}</p>}
@@ -86,7 +100,13 @@ export function RenameDialog({ path, currentName, onClose, onRenamed, onConflict
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" disabled={busy} onClick={() => void submit()}>
+          <Button
+            variant="primary"
+            disabled={busy}
+            onClick={() => {
+              void submit().catch(() => undefined);
+            }}
+          >
             Rename
           </Button>
         </DialogFooter>
