@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import type { FileSystem } from '@ims/core';
 import type { FindFirstResponse, FindResponse } from '@ims/shared';
+import { absolutePathSchema } from './schemas';
 
 export function findRoutes(
   app: FastifyInstance,
@@ -17,7 +18,7 @@ export function findRoutes(
           required: ['name'],
           properties: {
             name: { type: 'string', minLength: 1 },
-            from: { type: 'string', minLength: 1 },
+            from: absolutePathSchema,
           },
         },
       },
@@ -36,7 +37,7 @@ export function findRoutes(
           required: ['pattern'],
           properties: {
             pattern: { type: 'string', minLength: 1 },
-            from: { type: 'string', minLength: 1 },
+            from: absolutePathSchema,
           },
         },
       },

@@ -1,13 +1,14 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import type { FileSystem } from '@ims/core';
 import type { MoveCopyRequest, MoveCopyResponse } from '@ims/shared';
+import { absolutePathSchema } from './schemas';
 
 const moveCopySchema = {
   type: 'object',
   required: ['src', 'dest'],
   properties: {
-    src: { type: 'string', minLength: 1 },
-    dest: { type: 'string', minLength: 1 },
+    src: absolutePathSchema,
+    dest: absolutePathSchema,
     onConflict: { type: 'string', enum: ['error', 'overwrite', 'rename'] },
     recursive: { type: 'boolean' },
   },

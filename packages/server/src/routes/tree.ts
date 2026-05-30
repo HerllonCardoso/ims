@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import type { FileSystem } from '@ims/core';
 import type { TreeNode, TreeResponse } from '@ims/shared';
+import { absolutePathSchema } from './schemas';
 
 export function treeRoutes(
   app: FastifyInstance,
@@ -16,7 +17,7 @@ export function treeRoutes(
           type: 'object',
           required: ['path'],
           properties: {
-            path: { type: 'string', minLength: 1 },
+            path: absolutePathSchema,
             depth: { type: 'integer', minimum: 0, maximum: 64 },
           },
         },
@@ -32,16 +33,24 @@ export function treeRoutes(
 }
 
 function buildSubtree(fs: FileSystem, path: string, depth: number): TreeNode {
-  const name = path === '/' ? '' : (path.split('/').pop() ?? '');
-  const node: TreeNode = { name, path, kind: 'directory' };
-  if (depth <= 0) return node;
-  const entries = fs.entries(path);
+  const node = statNode(fs, path);
+  if (node.kind === 'file' || depth <= 0) return node;
+  const entries = fs.entries(node.path);
   node.children = entries.map((e) => {
-    const childPath = path === '/' ? `/${e.name}` : `${path}/${e.name}`;
+    const childPath = node.path === '/' ? `/${e.name}` : `${node.path}/${e.name}`;
     if (e.kind === 'directory') {
       return buildSubtree(fs, childPath, depth - 1);
     }
     return { name: e.name, path: childPath, kind: 'file' };
   });
   return node;
+}
+
+function statNode(fs: FileSystem, path: string): TreeNode {
+  let treeNode: TreeNode | null = null;
+  fs.walk(path, (node, canonicalPath) => {
+    treeNode = { name: node.name, path: canonicalPath, kind: node.kind };
+    return false;
+  });
+  return treeNode!;
 }

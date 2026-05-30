@@ -17,10 +17,7 @@ const STATUS: Record<string, number> = {
 
 function isFastifyValidationError(err: unknown): err is FastifyError {
   return (
-    typeof err === 'object' &&
-    err !== null &&
-    'validation' in err &&
-    Array.isArray(err.validation)
+    typeof err === 'object' && err !== null && 'validation' in err && Array.isArray(err.validation)
   );
 }
 
@@ -39,5 +36,4 @@ export function registerErrorHandler(app: FastifyInstance): void {
     const body: ErrorResponse = { error: 'InternalError', message: 'Internal server error' };
     return reply.status(500).send(body);
   });
-
 }

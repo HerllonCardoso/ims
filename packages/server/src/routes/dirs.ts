@@ -1,12 +1,13 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import type { FileSystem } from '@ims/core';
 import type { CreateRequest, CreateResponse } from '@ims/shared';
+import { absolutePathSchema } from './schemas';
 
 const createSchema = {
   type: 'object',
   required: ['path'],
   properties: {
-    path: { type: 'string', minLength: 1 },
+    path: absolutePathSchema,
     recursive: { type: 'boolean' },
   },
   additionalProperties: false,
