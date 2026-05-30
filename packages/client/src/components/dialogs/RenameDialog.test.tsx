@@ -11,7 +11,9 @@ import { api } from '@/api/client';
 import { ApiError } from '@/api/request';
 import { RenameDialog } from './RenameDialog';
 
-beforeEach(() => { vi.mocked(api.move).mockReset(); });
+beforeEach(() => {
+  vi.mocked(api.move).mockReset();
+});
 
 describe('RenameDialog', () => {
   it('calls api.move with the new name under the same parent', async () => {
@@ -19,7 +21,13 @@ describe('RenameDialog', () => {
     const user = userEvent.setup();
     const onRenamed = vi.fn();
     render(
-      <RenameDialog path="/a/b" currentName="b" onClose={vi.fn()} onRenamed={onRenamed} onConflict={vi.fn()} />,
+      <RenameDialog
+        path="/a/b"
+        currentName="b"
+        onClose={vi.fn()}
+        onRenamed={onRenamed}
+        onConflict={vi.fn()}
+      />,
     );
     await user.clear(screen.getByRole('textbox'));
     await user.type(screen.getByRole('textbox'), 'c');
@@ -32,7 +40,13 @@ describe('RenameDialog', () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
     render(
-      <RenameDialog path="/a/b" currentName="b" onClose={onClose} onRenamed={vi.fn()} onConflict={vi.fn()} />,
+      <RenameDialog
+        path="/a/b"
+        currentName="b"
+        onClose={onClose}
+        onRenamed={vi.fn()}
+        onConflict={vi.fn()}
+      />,
     );
     await user.click(screen.getByRole('button', { name: /rename/i }));
     expect(api.move).not.toHaveBeenCalled();
@@ -48,7 +62,13 @@ describe('RenameDialog', () => {
     const onConflict = vi.fn();
     const onClose = vi.fn();
     render(
-      <RenameDialog path="/a/b" currentName="b" onClose={onClose} onRenamed={vi.fn()} onConflict={onConflict} />,
+      <RenameDialog
+        path="/a/b"
+        currentName="b"
+        onClose={onClose}
+        onRenamed={vi.fn()}
+        onConflict={onConflict}
+      />,
     );
     await user.clear(screen.getByRole('textbox'));
     await user.type(screen.getByRole('textbox'), 'c');
@@ -63,7 +83,13 @@ describe('RenameDialog', () => {
     });
     const user = userEvent.setup();
     render(
-      <RenameDialog path="/a/b" currentName="b" onClose={vi.fn()} onRenamed={vi.fn()} onConflict={vi.fn()} />,
+      <RenameDialog
+        path="/a/b"
+        currentName="b"
+        onClose={vi.fn()}
+        onRenamed={vi.fn()}
+        onConflict={vi.fn()}
+      />,
     );
     await user.clear(screen.getByRole('textbox'));
     await user.type(screen.getByRole('textbox'), 'c');
