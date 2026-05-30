@@ -6,3 +6,6 @@ node_modules/
 coverage/
 packages/server/dist/public/
 packages/client/dist/
+.playwright-mcp
+.claude
+.vscode
