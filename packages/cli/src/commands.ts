@@ -12,7 +12,7 @@ interface Parsed {
   command: string;
   flags: Set<string>;
   args: string[];
-  rest: string; // everything after `command [flags] arg1` joined — used by `write`
+  rest: string;
 }
 
 function parse(line: string): Parsed {
@@ -23,9 +23,6 @@ function parse(line: string): Parsed {
     for (const ch of tokens.shift()!.slice(1)) flags.add(ch);
   }
   const args = [...tokens];
-  // For commands that take "<path> <content...>" (like `write`), `rest` is the tail
-  // after the first argument joined back with spaces. Whitespace within unquoted content
-  // is collapsed to a single space, keeping the REPL parser intentionally small.
   const rest = args.slice(1).join(' ');
   return { command, flags, args, rest };
 }
